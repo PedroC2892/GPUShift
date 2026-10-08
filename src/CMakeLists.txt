@@ -2,8 +2,12 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBPCI REQUIRED IMPORTED_TARGET libpci)
 
 add_library(gpushift STATIC
+  lib/conflicts.c
   lib/detect.c
+  lib/modes.c
+  lib/mux.c
   lib/pcinames.c
+  lib/state.c
   lib/sysinfo.c
   lib/util.c
   lib/version.c)

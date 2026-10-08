@@ -205,7 +205,23 @@ gs_system *gs_detect(void)
 	}
 	if (d)
 		closedir(d);
+	gs_load_state(sys);
+	/* A dGPU removed by Integrated mode is still managed, so keep showing it. */
+	bool present = !sys->state.dgpu[0];
+	for (size_t i = 0; i < sys->gpu_count && !present; i++)
+		present = strcmp(sys->gpus[i].address, sys->state.dgpu) == 0;
+	if (!present && sys->gpu_count < GS_MAX_GPUS) {
+		struct gs_gpu *g = &sys->gpus[sys->gpu_count++];
+		gs_strlcpy(g->address, sys->state.dgpu, sizeof(g->address));
+		g->vendor_id = (uint16_t)sys->state.dgpu_vendor;
+		g->device_id = (uint16_t)sys->state.dgpu_device;
+		g->kind = GS_GPU_DEDICATED;
+		g->removed = true;
+		gs_pci_names(g);
+	}
 	qsort(sys->gpus, sys->gpu_count, sizeof(sys->gpus[0]), cmp_gpu);
+	sys->mux = gs_mux_probe();
+	gs_detect_conflicts(sys);
 	return sys;
 }
 

@@ -19,6 +19,40 @@ extern "C" {
 typedef struct gs_system gs_system;
 typedef struct gs_gpu gs_gpu;
 
+/* Status codes. They are also the exit codes of gpushift and gpushift-helper. */
+typedef enum {
+	GS_OK = 0,
+	GS_ERR_GENERIC = 1,
+	GS_ERR_USAGE = 2,
+	GS_ERR_SINGLE_GPU = 3,       /* only one GPU: nothing to switch */
+	GS_ERR_NOT_SWITCHABLE = 4,   /* desktop or unsupported GPU combination */
+	GS_ERR_MODE_UNAVAILABLE = 5, /* the mode is not supported here */
+	GS_ERR_CONFLICT = 6,         /* another GPU switching tool is active */
+	GS_ERR_NO_INITRAMFS = 7,     /* no supported initramfs generator found */
+	GS_ERR_IO = 8,               /* reading or writing a file failed */
+	GS_ERR_INITRAMFS_FAILED = 9, /* the generator failed; changes rolled back */
+	GS_ERR_MUX = 10,             /* writing the firmware MUX failed */
+	GS_ERR_PERMISSION = 11,      /* the helper was not run as root */
+	GS_ERR_AUTH = 12,            /* polkit authentication denied or cancelled */
+} gs_status;
+
+typedef enum {
+	GS_MODE_NONE = 0,
+	GS_MODE_INTEGRATED, /* dGPU powered off and removed from the bus */
+	GS_MODE_HYBRID,     /* iGPU drives the display, dGPU via PRIME offload */
+	GS_MODE_DEDICATED,  /* firmware MUX routes the display to the dGPU */
+	GS_MODE_DEFAULT,    /* only as a pending mode: GPUShift config removed */
+} gs_mode;
+#define GS_MODE_COUNT 3 /* switchable modes: integrated, hybrid, dedicated */
+
+typedef enum {
+	GS_SWITCH_OK = 0,
+	GS_SWITCH_SINGLE_GPU,  /* exactly one GPU */
+	GS_SWITCH_DESKTOP,     /* not a laptop: information only */
+	GS_SWITCH_UNSUPPORTED, /* not one iGPU + one dGPU, or no safe mode */
+	GS_SWITCH_CONFLICT,    /* another switching tool is active */
+} gs_switch;
+
 typedef enum {
 	GS_GPU_UNKNOWN = 0,
 	GS_GPU_INTEGRATED,
@@ -67,6 +101,27 @@ const char *gs_sys_session_type(const gs_system *sys); /* NULL if unknown */
 const char *gs_sys_desktop(const gs_system *sys);      /* NULL if unknown */
 gs_secure_boot gs_sys_secure_boot(const gs_system *sys);
 const char *gs_secure_boot_name(gs_secure_boot sb);
+
+/* Firmware MUX backend name ("asus-wmi", ...), or NULL if there is none. */
+const char *gs_sys_mux_backend(const gs_system *sys);
+/* Active conflicting tools (envycontrol, supergfxctl, ...). */
+size_t gs_conflict_count(const gs_system *sys);
+const char *gs_conflict_name(const gs_system *sys, size_t index);
+/* switcheroo-control is compatible; reported for information only. */
+bool gs_sys_switcheroo(const gs_system *sys);
+
+const char *gs_strerror(gs_status status);
+const char *gs_mode_name(gs_mode mode);
+bool gs_mode_from_name(const char *name, gs_mode *mode);
+
+gs_switch gs_switchability(const gs_system *sys);
+const char *gs_switch_message(gs_switch sw);
+/* Fills "modes" (room for GS_MODE_COUNT) with the modes this system supports. */
+size_t gs_list_modes(const gs_system *sys, gs_mode *modes);
+bool gs_mode_available(const gs_system *sys, gs_mode mode);
+gs_mode gs_current_mode(const gs_system *sys);
+/* Mode that becomes active after the next reboot, or GS_MODE_NONE. */
+gs_mode gs_pending_mode(const gs_system *sys);
 
 #ifdef __cplusplus
 }

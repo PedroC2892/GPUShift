@@ -29,6 +29,26 @@ struct gs_gpu {
 	bool removed;
 };
 
+/* Persistent state, /var/lib/gpushift/state. */
+struct gs_state {
+	gs_mode mode;
+	char dgpu[32];               /* PCI address of the managed dGPU */
+	unsigned dgpu_vendor, dgpu_device;
+	char mux_backend[32];
+	char mux_orig[16];           /* MUX value before GPUShift changed it */
+};
+
+struct gs_mux_backend {
+	const char *name;
+	const char *mux_path;     /* sysfs attribute selecting the display GPU */
+	const char *dgpu_value;   /* value routing the panel to the dGPU */
+	const char *hybrid_value; /* value routing the panel to the iGPU */
+	const char *disable_path; /* optional attribute powering the dGPU off */
+	bool (*probe)(const struct gs_mux_backend *b);
+	gs_mode (*get)(const struct gs_mux_backend *b);
+	int (*set)(const struct gs_mux_backend *b, gs_mode mode);
+};
+
 struct gs_system {
 	struct gs_gpu gpus[GS_MAX_GPUS];
 	size_t gpu_count;
@@ -37,6 +57,14 @@ struct gs_system {
 	int chassis_type;
 	char session_type[32], desktop[64];
 	gs_secure_boot secure_boot;
+
+	struct gs_state state;
+	bool has_state;
+	gs_mode pending_from, pending_to;
+	const struct gs_mux_backend *mux;
+	const char *conflicts[8];
+	size_t conflict_count;
+	bool switcheroo;
 };
 
 /* Path helpers: "path" is absolute, the result is prefixed with the root. */
@@ -58,5 +86,20 @@ void gs_strlcpy(char *dst, const char *src, size_t n);
 void gs_pci_names(struct gs_gpu *gpu);
 void gs_nvml_vram(struct gs_gpu *gpu);
 void gs_detect_sysinfo(struct gs_system *sys);
+void gs_detect_conflicts(struct gs_system *sys);
+const struct gs_mux_backend *gs_mux_probe(void);
+const struct gs_mux_backend *gs_mux_find(const char *name);
+int gs_sysfs_write(const char *path, const char *value);
+
+/* State files (state.c). */
+#define GS_STATE_FILE "/var/lib/gpushift/state"
+#define GS_PENDING_FILE "/run/gpushift/pending"
+int gs_state_load(struct gs_state *st);  /* 0: loaded, -1: absent/invalid */
+int gs_state_format(const struct gs_state *st, char *buf, size_t n);
+void gs_load_state(struct gs_system *sys);
+
+/* The single integrated and dedicated GPU of a switchable system, or NULL. */
+const struct gs_gpu *gs_igpu(const gs_system *sys);
+const struct gs_gpu *gs_dgpu(const gs_system *sys);
 
 #endif

@@ -6,7 +6,8 @@
 
 gs_status gs_op_init(void);
 gs_status gs_op_apply(gs_system *sys, gs_mode mode);
-gs_status gs_op_reset(gs_system *sys);
+/* force: emergency reset that goes on without a new initramfs or MUX change. */
+gs_status gs_op_reset(gs_system *sys, bool force);
 gs_status gs_op_confirm(gs_system *sys);
 gs_status gs_op_revert(gs_system *sys);
 /* Runs once per boot; reboot_fn is injected so tests never reboot. */

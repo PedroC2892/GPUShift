@@ -317,7 +317,7 @@ gs_status gs_op_apply(gs_system *sys, gs_mode mode)
 	return GS_OK;
 }
 
-gs_status gs_op_reset(gs_system *sys)
+gs_status gs_op_reset(gs_system *sys, bool force)
 {
 	static struct snapshot snap;
 	char path[PATH_MAX], backup[PATH_MAX], data[CONTENT_MAX];
@@ -330,14 +330,17 @@ gs_status gs_op_reset(gs_system *sys)
 		msg("nothing to reset");
 		return GS_OK;
 	}
-	if (!gs_sys_initramfs_tool(sys))
+	if (!force && !gs_sys_initramfs_tool(sys))
 		return GS_ERR_NO_INITRAMFS;
 
 	gs_mode from = gs_current_mode(sys), orig = GS_MODE_NONE;
 	const struct gs_mux_backend *mux = gs_mux_find(sys->state.mux_backend);
 	gs_mode mux_prev = mux ? mux->get(mux) : GS_MODE_NONE;
-	if (mux && gs_mode_from_name(sys->state.mux_orig, &orig) && mux->set(mux, orig) < 0)
-		return GS_ERR_MUX;
+	if (mux && gs_mode_from_name(sys->state.mux_orig, &orig) && mux->set(mux, orig) < 0) {
+		if (!force)
+			return GS_ERR_MUX;
+		gs_op_log("could not restore the firmware MUX; switch it in the firmware setup");
+	}
 
 	gs_status st = GS_OK;
 	for (size_t i = 0; i < NTARGETS && st == GS_OK; i++) {
@@ -351,6 +354,15 @@ gs_status gs_op_reset(gs_system *sys)
 	}
 	if (st == GS_OK)
 		st = gs_regenerate_initramfs();
+	/*
+	 * An emergency reset keeps the /etc and MUX changes even without a new
+	 * initramfs: the old images still boot (C3 restored them) and the
+	 * configuration on the root filesystem applies from the next boot on.
+	 */
+	if (force && (st == GS_ERR_NO_INITRAMFS || st == GS_ERR_INITRAMFS_FAILED || st == GS_ERR_NO_SPACE)) {
+		gs_op_log("the initramfs was not regenerated; regenerate it with your distribution's tool");
+		st = GS_OK;
+	}
 	if (st != GS_OK) {
 		restore_snapshot(&snap);
 		if (mux && orig != GS_MODE_NONE)
@@ -462,7 +474,7 @@ gs_status gs_op_boot_check(gs_system *sys, int (*reboot_fn)(void))
 		for (size_t i = 0; i < NTARGETS; i++)
 			changed |= wpath(path, targets[i]) == 0 && gs_exists(path);
 		gs_op_log("gpushift.reset=1 on the kernel command line: resetting");
-		gs_status st = gs_op_reset(sys);
+		gs_status st = gs_op_reset(sys, true);
 		/* Rebooting only when something changed means a permanent parameter cannot loop. */
 		if (st == GS_OK && changed && reboot_fn() < 0)
 			gs_op_log("reboot failed; reboot manually to finish the reset");

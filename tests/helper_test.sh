@@ -342,6 +342,35 @@ unset GPUSHIFT_TEST_FREE_BYTES
 [ ! -e "$ROOT/usr/sbin/update-initramfs.log" ] || fail "generator ran without enough space"
 images_restored
 
+new_case "A2: gpushift.reset=1 without an initramfs generator" asus-mux
+fake_tool /usr/sbin/update-initramfs 0
+run apply dedicated; expect_rc 0
+rm "$ROOT/usr/sbin/update-initramfs"
+echo "ro quiet gpushift.reset=1" > "$SYS/proc/cmdline"
+boot; expect_rc 0
+absent $MODPROBE; absent $UDEV; absent $STATE
+[ "$(cat "$SYS/sys/devices/platform/asus-nb-wmi/gpu_mux_mode")" = 1 ] || fail "MUX not restored"
+grep -q "initramfs was not regenerated" "$WORK/stderr" || fail "missing initramfs warning"
+[ "$(reboots)" -eq 1 ] || fail "expected one reboot"
+
+new_case "A2: gpushift.reset=1 with a failing generator" intel-nvidia
+fake_tool /usr/sbin/update-initramfs 0
+run apply integrated; expect_rc 0
+fake_tool /usr/sbin/update-initramfs 1
+echo "ro quiet gpushift.reset=1" > "$SYS/proc/cmdline"
+boot; expect_rc 0
+absent $MODPROBE; absent $UDEV; absent $STATE
+[ "$(reboots)" -eq 1 ] || fail "expected one reboot"
+
+new_case "A2: reset --force keeps going when the generator fails" intel-nvidia
+fake_tool /usr/sbin/update-initramfs 0
+run apply integrated; expect_rc 0
+fake_tool /usr/sbin/update-initramfs 1
+run reset; expect_rc 9
+has $MODPROBE "blacklist nvidia"    # a normal reset still rolls back
+run reset --force; expect_rc 0
+absent $MODPROBE; absent $UDEV; absent /var/lib/gpushift
+
 new_case "refusals" single-intel
 fake_tool /usr/sbin/update-initramfs 0
 run apply hybrid; expect_rc 3
@@ -355,7 +384,7 @@ new_case "unavailable mode" intel-nvidia
 fake_tool /usr/sbin/update-initramfs 0
 run apply dedicated; expect_rc 5
 new_case "argument list is closed" intel-nvidia
-for args in "" "apply" "apply default" "apply Hybrid" "reset now" "confirm now" "boot-check" "apply hybrid extra" "--help"; do
+for args in "" "apply" "apply default" "apply Hybrid" "reset now" "reset --now" "confirm now" "boot-check" "apply hybrid extra" "--help"; do
 	# shellcheck disable=SC2086
 	run $args; expect_rc 2
 done

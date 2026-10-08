@@ -7,14 +7,16 @@ target_compile_definitions(gpushift-gui PRIVATE
   GPUSHIFT_TRANSLATIONS_DIR="${CMAKE_INSTALL_FULL_DATADIR}/gpushift/translations"
   GPUSHIFT_DOC_DIR="${CMAKE_INSTALL_FULL_DOCDIR}"
   QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
-install(TARGETS gpushift-gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS gpushift-gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT gui)
 
 # .qm files are installed (not embedded) so distributions can ship them as data.
 qt_add_translations(gpushift-gui
   TS_FILES ${PROJECT_SOURCE_DIR}/translations/gpushift_pt_PT.ts
   QM_FILES_OUTPUT_VARIABLE gpushift_qm_files)
-install(FILES ${gpushift_qm_files} DESTINATION ${CMAKE_INSTALL_DATADIR}/gpushift/translations)
+install(FILES ${gpushift_qm_files} DESTINATION ${CMAKE_INSTALL_DATADIR}/gpushift/translations
+        COMPONENT gui)
 install(FILES ${PROJECT_SOURCE_DIR}/data/gpushift.desktop
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/applications COMPONENT gui)
 install(FILES ${PROJECT_SOURCE_DIR}/data/gpushift.svg
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps COMPONENT gui)
+gpushift_install_man(gpushift-gui.1 gui)

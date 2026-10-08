@@ -1,0 +1,61 @@
+.TH GPUSHIFT 1 "2026-10-08" "GPUShift 0.1.0" "User Commands"
+.SH NAME
+gpushift \- show GPU information and switch GPU modes
+.SH SYNOPSIS
+.B gpushift
+.RB { status | modes }
+.RB [ \-\-json ]
+.br
+.B gpushift set
+.RB { integrated | hybrid | dedicated }
+.RB [ \-\-yes ]
+.br
+.B gpushift reset
+.RB [ \-\-yes ]
+.br
+.B gpushift reset \-\-root
+.I dir
+.br
+.B gpushift confirm
+.SH DESCRIPTION
+.B gpushift
+detects the GPUs of the system and switches between the GPU modes the
+hardware supports. Every change takes effect after a reboot and must be
+confirmed from a graphical session; otherwise it is reverted on the third
+boot.
+.SH COMMANDS
+.TP
+.B status
+System and GPU information, plus the mode summary.
+.TP
+.B modes
+Current, pending and available modes.
+.TP
+.BI set " mode"
+Switch to the given mode. Authenticates through polkit.
+.TP
+.B reset
+Remove every change made by GPUShift.
+.TP
+.BI "reset \-\-root" " dir"
+Remove GPUShift's files from a system mounted at
+.IR dir ,
+for example from a live USB.
+.TP
+.B confirm
+Confirm that the display works after a mode change.
+.SH OPTIONS
+.TP
+.B \-\-json
+Machine-readable output.
+.TP
+.BR \-y ", " \-\-yes
+Do not ask for confirmation.
+.SH RECOVERY
+If the screen stays black, see
+.IR /usr/share/doc/gpushift/RECOVERY.md ,
+or add
+.B gpushift.reset=1
+to the kernel command line from the boot menu.
+.SH SEE ALSO
+.BR gpushift\-gui (1)

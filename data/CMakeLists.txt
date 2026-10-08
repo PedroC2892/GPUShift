@@ -14,3 +14,14 @@ endif()
 
 install(FILES ${PROJECT_SOURCE_DIR}/docs/RECOVERY.md ${PROJECT_SOURCE_DIR}/docs/RECOVERY.pt_PT.md
         DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
+# Man pages are installed compressed, as Debian and Fedora expect.
+function(gpushift_install_man page component)
+  set(out ${CMAKE_BINARY_DIR}/${page}.gz)
+  add_custom_command(OUTPUT ${out}
+    COMMAND gzip -9nc ${PROJECT_SOURCE_DIR}/data/${page} > ${out}
+    DEPENDS ${PROJECT_SOURCE_DIR}/data/${page} VERBATIM)
+  add_custom_target(man-${page} ALL DEPENDS ${out})
+  install(FILES ${out} DESTINATION ${CMAKE_INSTALL_MANDIR}/man1 COMPONENT ${component})
+endfunction()
+gpushift_install_man(gpushift.1 core)

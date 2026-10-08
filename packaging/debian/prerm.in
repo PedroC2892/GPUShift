@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "remove" ]; then
+	# Undo GPUShift's changes while the helper is still installed, so no
+	# blacklist or udev rule is left behind. Removal goes on if it fails.
+	if ! @GPUSHIFT_HELPER_PATH@ reset; then
+		echo "gpushift: could not undo the GPU mode changes; see @CMAKE_INSTALL_FULL_DOCDIR@/RECOVERY.md" >&2
+		echo "gpushift: or delete /etc/modprobe.d/gpushift.conf and /etc/udev/rules.d/50-gpushift.rules and regenerate the initramfs" >&2
+	fi
+	if command -v deb-systemd-helper >/dev/null 2>&1; then
+		deb-systemd-helper disable gpushift-boot-check.service >/dev/null || true
+	fi
+fi
+
+exit 0

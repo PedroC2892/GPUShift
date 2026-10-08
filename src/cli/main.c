@@ -6,17 +6,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static void usage(FILE *out)
 {
-	fputs("Usage: gpushift <command> [--json]\n"
+	fputs("Usage: gpushift <command> [options]\n"
 	      "\n"
 	      "Commands:\n"
 	      "  status        Show system and GPU information\n"
 	      "  modes         Show the current, pending and available GPU modes\n"
+	      "  set <mode>    Switch to integrated, hybrid or dedicated (needs a reboot)\n"
+	      "  reset         Remove every change made by GPUShift (needs a reboot)\n"
 	      "\n"
 	      "Options:\n"
 	      "  --json        Machine-readable output (status, modes)\n"
+	      "  -y, --yes     Do not ask for confirmation (set, reset)\n"
 	      "  -h, --help    Show this help\n"
 	      "  --version     Show the version\n", out);
 }
@@ -207,14 +211,90 @@ static void status_json(const gs_system *sys)
 	printf("}\n");
 }
 
+static bool confirm(const char *question, bool yes)
+{
+	if (yes)
+		return true;
+	if (!isatty(STDIN_FILENO)) {
+		fprintf(stderr, "gpushift: not a terminal; use --yes to confirm\n");
+		return false;
+	}
+	printf("%s [y/N] ", question);
+	fflush(stdout);
+	char answer[16];
+	return fgets(answer, sizeof(answer), stdin) && (answer[0] == 'y' || answer[0] == 'Y');
+}
+
+static int fail(gs_status st)
+{
+	fprintf(stderr, "gpushift: %s\n", gs_strerror(st));
+	return st;
+}
+
+static int cmd_set(const gs_system *sys, const char *name, bool yes)
+{
+	gs_mode mode;
+	if (!name || !gs_mode_from_name(name, &mode) || mode == GS_MODE_DEFAULT) {
+		fprintf(stderr, "gpushift: expected a mode: integrated, hybrid or dedicated\n");
+		return GS_ERR_USAGE;
+	}
+	switch (gs_switchability(sys)) {
+	case GS_SWITCH_OK:
+		break;
+	case GS_SWITCH_SINGLE_GPU:
+		fprintf(stderr, "gpushift: %s\n", gs_switch_message(GS_SWITCH_SINGLE_GPU));
+		return GS_ERR_SINGLE_GPU;
+	case GS_SWITCH_CONFLICT:
+		for (size_t i = 0; i < gs_conflict_count(sys); i++)
+			fprintf(stderr, "gpushift: conflicting tool active: %s\n", gs_conflict_name(sys, i));
+		return fail(GS_ERR_CONFLICT);
+	default:
+		fprintf(stderr, "gpushift: %s\n", gs_switch_message(gs_switchability(sys)));
+		return GS_ERR_NOT_SWITCHABLE;
+	}
+	if (!gs_mode_available(sys, mode))
+		return fail(GS_ERR_MODE_UNAVAILABLE);
+	if (mode == gs_current_mode(sys) && gs_pending_mode(sys) == GS_MODE_NONE) {
+		printf("Already in %s mode; nothing to do.\n", name);
+		return GS_OK;
+	}
+	if (!gs_sys_initramfs_tool(sys))
+		return fail(GS_ERR_NO_INITRAMFS);
+
+	printf("Switching to %s mode. The change takes effect after a reboot.\n", name);
+	if (mode == GS_MODE_INTEGRATED)
+		printf("The dedicated GPU will be powered off; displays wired to it will not work.\n");
+	if (!confirm("Continue?", yes))
+		return GS_ERR_GENERIC;
+	gs_status st = gs_apply_mode(mode);
+	if (st != GS_OK)
+		return fail(st);
+	printf("Done. Reboot to switch to %s mode.\n", name);
+	return GS_OK;
+}
+
+static int cmd_reset(bool yes)
+{
+	printf("This removes every change made by GPUShift. It takes effect after a reboot.\n");
+	if (!confirm("Continue?", yes))
+		return GS_ERR_GENERIC;
+	gs_status st = gs_reset();
+	if (st != GS_OK)
+		return fail(st);
+	printf("Done. Reboot to finish restoring the original configuration.\n");
+	return GS_OK;
+}
+
 int main(int argc, char **argv)
 {
-	const char *cmd = NULL;
-	bool json = false;
+	const char *cmd = NULL, *arg = NULL;
+	bool json = false, yes = false;
 
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "--json") == 0) {
 			json = true;
+		} else if (strcmp(argv[i], "-y") == 0 || strcmp(argv[i], "--yes") == 0) {
+			yes = true;
 		} else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
 			usage(stdout);
 			return EXIT_SUCCESS;
@@ -223,13 +303,19 @@ int main(int argc, char **argv)
 			return EXIT_SUCCESS;
 		} else if (!cmd && argv[i][0] != '-') {
 			cmd = argv[i];
+		} else if (cmd && !arg && strcmp(cmd, "set") == 0 && argv[i][0] != '-') {
+			arg = argv[i];
 		} else {
 			fprintf(stderr, "gpushift: unexpected argument '%s'\n", argv[i]);
 			usage(stderr);
 			return GS_ERR_USAGE;
 		}
 	}
-	if (!cmd || (strcmp(cmd, "status") != 0 && strcmp(cmd, "modes") != 0)) {
+	static const char *const commands[] = { "status", "modes", "set", "reset" };
+	bool known = false;
+	for (size_t i = 0; cmd && i < 4; i++)
+		known |= strcmp(cmd, commands[i]) == 0;
+	if (!known) {
 		if (cmd)
 			fprintf(stderr, "gpushift: unknown command '%s'\n", cmd);
 		usage(stderr);
@@ -241,7 +327,12 @@ int main(int argc, char **argv)
 		fprintf(stderr, "gpushift: out of memory\n");
 		return EXIT_FAILURE;
 	}
-	if (strcmp(cmd, "modes") == 0 && json) {
+	int rc = GS_OK;
+	if (strcmp(cmd, "set") == 0) {
+		rc = cmd_set(sys, arg, yes);
+	} else if (strcmp(cmd, "reset") == 0) {
+		rc = cmd_reset(yes);
+	} else if (strcmp(cmd, "modes") == 0 && json) {
 		putchar('{');
 		modes_json_fields(sys);
 		printf("}\n");
@@ -253,5 +344,5 @@ int main(int argc, char **argv)
 		status_text(sys);
 	}
 	gs_system_free(sys);
-	return EXIT_SUCCESS;
+	return rc;
 }

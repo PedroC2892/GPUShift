@@ -64,7 +64,7 @@ has $MODPROBE "blacklist nvidia"
 has $UDEV 'KERNEL=="0000:01:00.0", ATTR{vendor}=="0x10de", ATTR{device}=="0x25a2"'
 has $UDEV 'KERNEL=="0000:01:00.1", ATTR{vendor}=="0x10de", ATTR{device}=="0x2291"'
 has $STATE "dgpu_functions=0000:01:00.0=10de:25a2 0000:01:00.1=10de:2291"
-has $STATE "mode=integrated"
+has $STATE "^mode=integrated"
 has $STATE "dgpu=0000:01:00.0"
 has $PENDING "from=hybrid"
 has $PENDING "to=integrated"
@@ -75,7 +75,7 @@ GPUSHIFT_SYSFS_ROOT="$SYS" GPUSHIFT_ETC_ROOT="$ROOT" "$CLI" modes | grep -q "Pen
 run apply hybrid; expect_rc 0
 has $MODPROBE "NVreg_DynamicPowerManagement=0x02"
 has $UDEV 'ACTION=="bind"'
-has $STATE "mode=hybrid"
+has $STATE "^mode=hybrid"
 absent $PENDING   # back to the mode that is still running
 run reset; expect_rc 0
 absent $MODPROBE; absent $UDEV; absent $STATE; absent /var/lib/gpushift
@@ -187,7 +187,7 @@ boot; expect_rc 0; has $STATE "boot_attempts=2"
 [ "$(reboots)" -eq 0 ] || fail "rebooted too early"
 boot; expect_rc 0
 grep -q "restoring the previous GPU mode, do not power off" "$WORK/stderr" || fail "no console warning (M3)"
-has $STATE "mode=hybrid"
+has $STATE "^mode=hybrid"
 has $STATE "pending=0"
 has $STATE "auto_reboot=1"
 absent $MODPROBE; absent $UDEV
@@ -205,7 +205,7 @@ run confirm; expect_rc 0
 has $STATE "pending=0"
 has /var/lib/gpushift/log "mode change confirmed"
 boot; boot; boot; boot
-has $STATE "mode=integrated"
+has $STATE "^mode=integrated"
 has $STATE "boot_attempts=0"
 [ "$(reboots)" -eq 0 ] || fail "confirmed change was reverted"
 run revert; expect_rc 13
@@ -221,7 +221,7 @@ has $STATE "pending=0"
 run apply hybrid; expect_rc 0
 boot; expect_rc 0
 run revert; expect_rc 0
-has $STATE "mode=integrated"
+has $STATE "^mode=integrated"
 has $MODPROBE "blacklist nvidia"
 has $UDEV "ATTR{remove}"
 has $PENDING "from=hybrid"
@@ -239,7 +239,7 @@ has $MODPROBE "blacklist nvidia"   # rolled back to the applied mode
 [ "$(reboots)" -eq 0 ] || fail "rebooted after a failed revert"
 fake_tool /usr/sbin/update-initramfs 0
 boot; expect_rc 0
-has $STATE "mode=hybrid"
+has $STATE "^mode=hybrid"
 has $STATE "pending=0"
 absent $MODPROBE
 [ "$(reboots)" -eq 1 ] || fail "expected one reboot after the retried revert"

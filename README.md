@@ -222,11 +222,14 @@ GPUShift owns two files and one state directory. Before it first writes to
 
 - `/etc/modprobe.d/gpushift.conf`: `blacklist` and `alias <module> off` for
   every module that can drive the dGPU (`nvidia`, `nvidia_drm`,
-  `nvidia_modeset`, `nvidia_uvm`, `nouveau`; `amdgpu`, `radeon`; `i915`, `xe`),
-  except the module the iGPU uses.
-- `/etc/udev/rules.d/50-gpushift.rules`: a rule matching every PCI function of
-  the dGPU slot (GPU, HDMI audio, USB-C controller) that enables runtime power
-  management and removes the device from the bus.
+  `nvidia_modeset`, `nvidia_uvm`, `nouveau`; `amdgpu`, `radeon`; `i915`, `xe`).
+  When the iGPU has the same vendor as the dGPU (AMD APU + AMD dGPU, Intel +
+  Intel Arc) nothing is blacklisted, because those drivers may drive the iGPU.
+- `/etc/udev/rules.d/50-gpushift.rules`: one rule per PCI function of the dGPU
+  (GPU, HDMI audio, USB-C controller), each matching its exact address and
+  vendor:device as recorded when the mode was applied, that enables runtime
+  power management and removes the device from the bus. If the hardware or
+  the PCI numbering changes, the rules simply stop matching.
 - On a MUX laptop, the MUX is set to the iGPU.
 
 **Hybrid**
@@ -292,16 +295,16 @@ safest, most portable and simplest option.
   several GPUs get information only, as required.
 - **Never without a display.** Integrated and Hybrid need an iGPU with a
   driver that drives the internal panel (or a MUX that can route it there).
-  Dedicated needs a MUX and a dGPU with a bound driver. The iGPU's own driver
-  is never blacklisted (important for AMD APU + AMD dGPU, which share
-  `amdgpu`).
+  Dedicated needs a MUX and a dGPU with a bound driver. No driver the iGPU
+  uses or could use is ever blacklisted (same-vendor pairs get no blacklist).
 - **iGPU or dGPU.** NVIDIA is always dedicated; Intel is integrated except the
   Arc discrete device IDs; an AMD GPU is integrated when its PCI slot also
   holds AMD SoC functions (vendor `0x1022`: PSP, USB), which discrete cards
   never have.
-- **Integrated mode removes the whole slot.** The udev rule matches every
-  function of the dGPU slot and sets runtime PM to `auto` before removal, so
-  audio and USB-C functions do not keep the card awake.
+- **Integrated mode removes every function, exactly.** The udev rules list
+  each function of the dGPU slot with its address and vendor:device and set
+  runtime PM to `auto` before removal, so audio and USB-C functions do not
+  keep the card awake, and no other device can ever match.
 - **Removed dGPU stays visible.** In Integrated mode the dGPU is gone from
   sysfs; its address and IDs are kept in the state file so GPUShift still
   shows it and still offers the other modes.
@@ -361,11 +364,17 @@ safest, most portable and simplest option.
   both variables; only the uninstalled `gpushift-helper-test` honours them,
   and it refuses to run without `GPUSHIFT_ETC_ROOT`.
 - **Confirmation and automatic revert.** The boot counter lives in the state
-  file; "rebooted since the change" is the absence of the `/run` marker, so a
-  re-login without reboot never confirms a change. The boot check reboots at
-  most once per change (`auto_reboot` is recorded before rebooting), and
-  `gpushift.reset=1` only reboots when it actually removed something, so a
-  parameter left in the bootloader cannot cause a loop. Confirm and revert
+  file, which is written *before* the MUX or any file changes, so a crash
+  half-way through still leaves an unconfirmed change to revert.
+  "Rebooted since the change" is the absence of the `/run` marker, so a
+  re-login without reboot never confirms a change. A failed revert is tried
+  again on every boot, and from the fifth unconfirmed boot it restores the
+  files and MUX even without a new initramfs. The boot check only reboots
+  after a revert whose state is on disk, at most once per change, and
+  `gpushift.reset=1` only reboots when it actually removed something, so
+  neither can loop. GPUShift files found without a valid state are treated
+  as an unconfirmed change with an unknown previous mode: the third boot
+  resets everything and moves the firmware MUX back to the iGPU. Confirm and revert
   have their own polkit actions (`org.gpushift.confirm`,
   `org.gpushift.revert`, selected by `argv1`) that need no password: they must
   work unattended at login, and they only act on an unconfirmed change after a

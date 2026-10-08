@@ -110,6 +110,9 @@ const char *gs_conflict_name(const gs_system *sys, size_t index);
 /* switcheroo-control is compatible; reported for information only. */
 bool gs_sys_switcheroo(const gs_system *sys);
 
+/* Name of the initramfs generator that will be used, or NULL if none was found. */
+const char *gs_sys_initramfs_tool(const gs_system *sys);
+
 const char *gs_strerror(gs_status status);
 const char *gs_mode_name(gs_mode mode);
 bool gs_mode_from_name(const char *name, gs_mode *mode);
@@ -122,6 +125,14 @@ bool gs_mode_available(const gs_system *sys, gs_mode mode);
 gs_mode gs_current_mode(const gs_system *sys);
 /* Mode that becomes active after the next reboot, or GS_MODE_NONE. */
 gs_mode gs_pending_mode(const gs_system *sys);
+
+/*
+ * Apply a mode or undo every change made by GPUShift. Both run
+ * gpushift-helper through pkexec (directly when already root), block until it
+ * finishes and take effect after a reboot. Return a gs_status code.
+ */
+gs_status gs_apply_mode(gs_mode mode);
+gs_status gs_reset(void);
 
 #ifdef __cplusplus
 }

@@ -26,7 +26,23 @@ add_compile_options($<$<CONFIG:Debug>:-fsanitize=address,undefined>
                     $<$<CONFIG:Debug>:-fno-sanitize-recover=all>)
 add_link_options($<$<CONFIG:Debug>:-fsanitize=address,undefined>)
 
+# Runtime configuration written by gpushift-helper. These are the
+# administrator directories, which take precedence over the vendor ones.
+set(GPUSHIFT_MODPROBE_DIR "/etc/modprobe.d" CACHE PATH "modprobe.d directory written at runtime")
+set(GPUSHIFT_UDEV_RULES_DIR "/etc/udev/rules.d" CACHE PATH "udev rules directory written at runtime")
+
+# polkit only reads actions from its own directory, whatever the install prefix.
+find_package(PkgConfig REQUIRED)
+pkg_get_variable(_polkit_policydir polkit-gobject-1 policydir)
+if(NOT _polkit_policydir)
+  set(_polkit_policydir "/usr/share/polkit-1/actions")
+endif()
+set(GPUSHIFT_POLKIT_ACTIONS_DIR "${_polkit_policydir}" CACHE PATH "polkit actions directory")
+
+set(GPUSHIFT_HELPER_PATH "${CMAKE_INSTALL_FULL_LIBEXECDIR}/gpushift-helper")
+
 add_subdirectory(src)
+add_subdirectory(data)
 if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()

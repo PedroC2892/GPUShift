@@ -65,6 +65,7 @@ struct gs_system {
 	const char *conflicts[8];
 	size_t conflict_count;
 	bool switcheroo;
+	char initramfs[24];  /* name of the initramfs generator found, if any */
 };
 
 /* Path helpers: "path" is absolute, the result is prefixed with the root. */
@@ -97,6 +98,29 @@ int gs_sysfs_write(const char *path, const char *value);
 int gs_state_load(struct gs_state *st);  /* 0: loaded, -1: absent/invalid */
 int gs_state_format(const struct gs_state *st, char *buf, size_t n);
 void gs_load_state(struct gs_system *sys);
+
+/* Files written by gpushift-helper (below $GPUSHIFT_ETC_ROOT in test builds). */
+#define GS_MODPROBE_FILE GPUSHIFT_MODPROBE_DIR "/gpushift.conf"
+#define GS_UDEV_FILE GPUSHIFT_UDEV_RULES_DIR "/50-gpushift.rules"
+#define GS_BACKUP_DIR "/var/lib/gpushift/backup"
+
+/* Builds the file contents for a mode; an empty string means "no file". */
+int gs_config_build(const gs_system *sys, gs_mode mode,
+		    char *modprobe, size_t modprobe_len, char *udev, size_t udev_len);
+bool gs_valid_pci_address(const char *address);
+
+/* Initramfs generators (initramfs.c). */
+struct gs_initramfs_backend {
+	const char *name;
+	const char *binary;       /* looked up in the fixed system directories */
+	const char *runner;       /* optional absolute program to run instead */
+	const char *args[4];      /* arguments after argv[0] */
+	int (*run)(const struct gs_initramfs_backend *b, const char *path);
+};
+const struct gs_initramfs_backend *gs_initramfs_find(char *path, size_t n);
+
+/* Runs an absolute program without a shell; returns its exit status or -1. */
+int gs_spawn(const char *path, char *const argv[], char *const envp[]);
 
 /* The single integrated and dedicated GPU of a switchable system, or NULL. */
 const struct gs_gpu *gs_igpu(const gs_system *sys);

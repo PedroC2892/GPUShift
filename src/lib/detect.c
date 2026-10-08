@@ -221,6 +221,9 @@ gs_system *gs_detect(void)
 	}
 	qsort(sys->gpus, sys->gpu_count, sizeof(sys->gpus[0]), cmp_gpu);
 	sys->mux = gs_mux_probe();
+	const struct gs_initramfs_backend *ird = gs_initramfs_find(path, sizeof(path));
+	if (ird)
+		gs_strlcpy(sys->initramfs, ird->name, sizeof(sys->initramfs));
 	gs_detect_conflicts(sys);
 	return sys;
 }
@@ -253,6 +256,7 @@ const char *gs_gpu_power_state(const gs_gpu *g) { return opt(g->power_state); }
 uint64_t gs_gpu_vram_bytes(const gs_gpu *g) { return g->vram_bytes; }
 bool gs_gpu_internal_display(const gs_gpu *g) { return g->internal_display; }
 bool gs_gpu_removed(const gs_gpu *g) { return g->removed; }
+const char *gs_sys_initramfs_tool(const gs_system *sys) { return opt(sys->initramfs); }
 
 const char *gs_gpu_kind_name(gs_gpu_kind kind)
 {

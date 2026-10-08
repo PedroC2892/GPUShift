@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>GPUShift</vendor>
+  <vendor_url>@PROJECT_HOMEPAGE_URL@</vendor_url>
+  <icon_name>gpushift</icon_name>
+  <action id="org.gpushift.helper">
+    <description>Change the GPU mode</description>
+    <description xml:lang="pt_PT">Alterar o modo da GPU</description>
+    <message>Authentication is required to change the GPU mode</message>
+    <message xml:lang="pt_PT">É necessária autenticação para alterar o modo da GPU</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@GPUSHIFT_HELPER_PATH@</annotate>
+  </action>
+</policyconfig>

@@ -33,8 +33,8 @@ static bool mode_supported(const gs_system *sys, gs_mode mode)
 	const struct gs_gpu *igpu = gs_igpu(sys), *dgpu = gs_dgpu(sys);
 	if (!igpu || !dgpu)
 		return false;
-	/* The iGPU must be able to drive the panel, either directly or via the MUX. */
-	bool igpu_panel = igpu->internal_display || sys->mux;
+	/* The iGPU needs a driver and the panel, either directly or via the MUX. */
+	bool igpu_panel = igpu->driver[0] && (igpu->internal_display || sys->mux);
 	switch (mode) {
 	case GS_MODE_INTEGRATED:
 	case GS_MODE_HYBRID:

@@ -33,6 +33,8 @@ expect single-intel 0 'only one GPU' modes
 expect single-intel 0 '"modes":\[\]' status --json
 expect desktop-2gpu 0 'not a laptop' modes
 expect dgpu-nodriver 0 'Driver:         none' status
+expect no-such-fixture 0 'No GPU was detected' status
+expect no-such-fixture 4 'No GPU was detected' set hybrid --yes
 expect intel-nvidia 2 'unknown command' frobnicate
 expect intel-nvidia 2 'Usage' 
 expect intel-nvidia 0 'gpushift [0-9]' --version

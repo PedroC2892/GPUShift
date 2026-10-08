@@ -369,5 +369,9 @@ Guia completo: %2</translation>
         <source>There is no unconfirmed mode change since the last reboot.</source>
         <translation>Não há nenhuma troca de modo por confirmar desde o último reinício.</translation>
     </message>
+    <message>
+        <source>No GPU was detected.</source>
+        <translation>Não foi detetada nenhuma GPU.</translation>
+    </message>
 </context>
 </TS>

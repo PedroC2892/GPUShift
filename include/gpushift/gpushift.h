@@ -52,6 +52,7 @@ typedef enum {
 	GS_SWITCH_DESKTOP,     /* not a laptop: information only */
 	GS_SWITCH_UNSUPPORTED, /* not one iGPU + one dGPU, or no safe mode */
 	GS_SWITCH_CONFLICT,    /* another switching tool is active */
+	GS_SWITCH_NO_GPU,      /* no GPU detected */
 } gs_switch;
 
 typedef enum {

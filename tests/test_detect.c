@@ -126,6 +126,7 @@ static void test_missing_root(void)
 	CHECK(gs_gpu_count(sys) == 0);
 	CHECK_STR(gs_sys_distro(sys), "Unknown Linux");
 	CHECK(!gs_sys_is_laptop(sys));
+	CHECK(gs_switchability(sys) == GS_SWITCH_NO_GPU);
 	gs_system_free(sys);
 }
 

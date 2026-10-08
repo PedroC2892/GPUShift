@@ -325,6 +325,8 @@ QString MainWindow::switchMessage(gs_switch sw)
 	switch (sw) {
 	case GS_SWITCH_SINGLE_GPU:
 		return tr("This system has only one GPU, so there are no modes to switch.");
+	case GS_SWITCH_NO_GPU:
+		return tr("No GPU was detected.");
 	case GS_SWITCH_DESKTOP:
 		return tr("This is not a laptop. GPU modes are only managed on laptops; the information "
 			  "below is shown for reference.");

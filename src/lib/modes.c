@@ -49,7 +49,9 @@ static bool mode_supported(const gs_system *sys, gs_mode mode)
 
 gs_switch gs_switchability(const gs_system *sys)
 {
-	if (sys->gpu_count <= 1)
+	if (sys->gpu_count == 0)
+		return GS_SWITCH_NO_GPU;
+	if (sys->gpu_count == 1)
 		return GS_SWITCH_SINGLE_GPU;
 	if (!gs_sys_is_laptop(sys))
 		return GS_SWITCH_DESKTOP;
@@ -65,6 +67,8 @@ const char *gs_switch_message(gs_switch sw)
 	switch (sw) {
 	case GS_SWITCH_OK:
 		return "GPU modes can be switched on this system.";
+	case GS_SWITCH_NO_GPU:
+		return "No GPU was detected.";
 	case GS_SWITCH_SINGLE_GPU:
 		return "This system has only one GPU, so there are no modes to switch.";
 	case GS_SWITCH_DESKTOP:

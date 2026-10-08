@@ -105,7 +105,7 @@ static void modes_text(const gs_system *sys)
 
 static const char *switch_name(gs_switch sw)
 {
-	static const char *const names[] = { "ok", "single-gpu", "desktop", "unsupported", "conflict" };
+	static const char *const names[] = { "ok", "single-gpu", "desktop", "unsupported", "conflict", "no-gpu" };
 	return names[sw];
 }
 

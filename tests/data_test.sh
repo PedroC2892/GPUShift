@@ -16,4 +16,18 @@ if [ -f "$UNIT" ]; then
 	has "$UNIT" "ConditionPathExists=|/etc/udev/rules.d/50-gpushift.rules"
 fi
 
+# The recovery guide must match the code (M1).
+for doc in "$SRC/docs/RECOVERY.md" "$SRC/docs/RECOVERY.pt_PT.md"; do
+	has "$doc" "/etc/modprobe.d/gpushift.conf"
+	has "$doc" "/etc/udev/rules.d/50-gpushift.rules"
+	has "$doc" "gpushift.reset=1"
+	has "$doc" "reset --force"
+	# Backups must be put back by hand before /var/lib/gpushift is deleted.
+	has "$doc" "sudo cp /mnt/var/lib/gpushift/backup/gpushift.conf /mnt/etc/modprobe.d/"
+	# Every MUX attribute GPUShift writes has a manual way back.
+	for attr in $(grep -o '"/sys/[^"]*"' "$SRC/src/lib/mux.c" | tr -d '"' | grep -v dgpu_disable); do
+		has "$doc" "$attr"
+	done
+done
+
 [ "$failures" -eq 0 ] || exit 1

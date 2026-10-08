@@ -136,6 +136,8 @@ gs_mode gs_pending_mode(const gs_system *sys);
  */
 gs_status gs_apply_mode(gs_mode mode);
 gs_status gs_reset(void);
+/* Emergency reset: removes GPUShift's files even if the initramfs cannot be rebuilt. */
+gs_status gs_reset_force(void);
 
 /*
  * After a reboot, a change stays unconfirmed until the user confirms it from

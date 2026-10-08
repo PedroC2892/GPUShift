@@ -47,6 +47,11 @@ gs_status gs_reset(void)
 	return run_helper("reset", NULL);
 }
 
+gs_status gs_reset_force(void)
+{
+	return run_helper("reset", "--force");
+}
+
 gs_status gs_confirm(void)
 {
 	return run_helper("confirm", NULL);

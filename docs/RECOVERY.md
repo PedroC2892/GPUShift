@@ -14,14 +14,18 @@ itself after 30 seconds without an answer. Without the GUI, reaching the
 session is enough.
 
 If the change is never confirmed, the `gpushift-boot-check` service restores
-the previous mode on the **third boot** without confirmation: it puts the
-previous configuration back, regenerates the initramfs and reboots once. So
-if the screen stays black, reboot (hold the power button if needed) and let it
-start two more times.
+the previous mode from the **third boot** without confirmation on: it puts the
+previous configuration and firmware MUX setting back, regenerates the
+initramfs and reboots once. So if the screen stays black, reboot (hold the
+power button if needed) and let it start two more times.
+
+If the revert itself fails (for example `/boot` is full), nothing is changed
+and it is tried again on every following boot; it never reboots in a loop.
+Every regeneration keeps a copy of the existing initramfs images and puts them
+back if the new ones are missing, empty or unreadable.
 
 The reason is recorded in `/var/lib/gpushift/log` and in the journal
-(`journalctl -u gpushift-boot-check`). The automatic reboot happens at most
-once per change, so it can never loop.
+(`journalctl -u gpushift-boot-check`).
 
 This step needs systemd. On systems without systemd the service is not
 installed and only steps 2 to 5 are available.
@@ -37,11 +41,24 @@ installed and only steps 2 to 5 are available.
    sudo reboot
    ```
 
+If `reset` reports that the initramfs could not be regenerated, use the
+emergency reset, which removes GPUShift's files and restores the firmware MUX
+anyway, then rebuild the initramfs once the problem (usually a full `/boot`)
+is fixed:
+
+```sh
+sudo gpushift reset --force
+sudo reboot
+```
+
 ## 3. Boot parameter `gpushift.reset=1`
 
 This does not change your bootloader configuration; the parameter applies to
 that one boot only. GPUShift sees it early in the boot, removes all of its
-changes and reboots once into the original configuration.
+changes, restores the firmware MUX and reboots once into the original
+configuration. It works even if the GPUShift state is missing or the
+initramfs cannot be rebuilt, and leaving the parameter in place does not cause
+a reboot loop.
 
 **GRUB** (Debian, Ubuntu, Fedora, openSUSE, most Arch installs):
 
@@ -91,14 +108,21 @@ sudo gpushift reset --root /mnt
 It removes GPUShift's files from `/mnt`, restores backed-up files and prints
 the initramfs command for the installed distribution.
 
-**Without GPUShift**, do the same by hand:
+**Without GPUShift**, do the same by hand. First put back any file that
+existed before GPUShift (only if the backup exists), then delete GPUShift's
+files:
 
 ```sh
-sudo rm -f /mnt/etc/modprobe.d/gpushift.conf /mnt/etc/udev/rules.d/50-gpushift.rules
-# Files that existed before GPUShift, if any:
 ls /mnt/var/lib/gpushift/backup/
+sudo cp /mnt/var/lib/gpushift/backup/gpushift.conf /mnt/etc/modprobe.d/        # only if listed
+sudo cp /mnt/var/lib/gpushift/backup/50-gpushift.rules /mnt/etc/udev/rules.d/  # only if listed
+# Delete whichever of the two was NOT restored above:
+sudo rm -f /mnt/etc/modprobe.d/gpushift.conf /mnt/etc/udev/rules.d/50-gpushift.rules
 sudo rm -rf /mnt/var/lib/gpushift
 ```
+
+If `/mnt/var/lib/gpushift/initramfs-backup/` exists, a regeneration was
+interrupted; the regeneration below replaces those images anyway.
 
 In both cases, regenerate the initramfs from a chroot. Mount `/boot` (and
 `/boot/efi`) first if they are separate partitions:
@@ -112,9 +136,28 @@ sudo chroot /mnt mkinitcpio -P                     # Arch Linux
 
 Then reboot without the USB stick.
 
-### Laptops with a firmware MUX
+## Laptops with a firmware MUX
 
-If you had used Dedicated mode on an ASUS laptop, the MUX may still route the
-panel to the dedicated GPU. Once the system boots, `sudo gpushift reset`
-restores it. From a live USB running on the same laptop you can also run
-`echo 1 | sudo tee /sys/devices/platform/asus-nb-wmi/gpu_mux_mode` and reboot.
+Dedicated mode switches a firmware setting that survives reinstalls. Steps 1
+to 3 restore it automatically (`gpushift.reset=1` included). The firmware
+setup (BIOS) usually still shows a picture even when Linux does not, because
+it uses the firmware's own graphics.
+
+To switch the MUX back by hand, from the installed system (text console) or
+from a live USB running on the same laptop, write the "hybrid" value and
+reboot:
+
+| Laptop | Attribute | Hybrid value |
+|--------|-----------|--------------|
+| ASUS, Linux 6.17 and newer | `/sys/class/firmware-attributes/asus-armoury/attributes/gpu_mux_mode/current_value` | `1` |
+| ASUS, older kernels | `/sys/devices/platform/asus-nb-wmi/gpu_mux_mode` | `1` |
+| Lenovo Legion (legion_laptop module) | `/sys/bus/platform/drivers/legion/PNP0C09:00/gsync` | `0` |
+
+```sh
+echo 1 | sudo tee /sys/devices/platform/asus-nb-wmi/gpu_mux_mode   # example: ASUS
+sudo reboot
+```
+
+Without Linux at all, open the firmware setup (usually F2 or Del while
+booting) and set the GPU mode back to hybrid / "Optimus" / "Dynamic graphics"
+(the name depends on the vendor).

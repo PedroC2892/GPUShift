@@ -18,6 +18,7 @@ static void usage(FILE *out)
 	      "  modes         Show the current, pending and available GPU modes\n"
 	      "  set <mode>    Switch to integrated, hybrid or dedicated (needs a reboot)\n"
 	      "  reset         Remove every change made by GPUShift (needs a reboot)\n"
+	      "  reset --force Same, even if the initramfs cannot be rebuilt (emergency)\n"
 	      "  reset --root <dir>\n"
 	      "                Remove GPUShift's files from a system mounted at <dir>\n"
 	      "                (recovery from a live USB)\n"
@@ -302,12 +303,12 @@ static int cmd_confirm(const gs_system *sys)
 	return GS_OK;
 }
 
-static int cmd_reset(bool yes)
+static int cmd_reset(bool yes, bool force)
 {
 	printf("This removes every change made by GPUShift. It takes effect after a reboot.\n");
 	if (!confirm("Continue?", yes))
 		return GS_ERR_GENERIC;
-	gs_status st = gs_reset();
+	gs_status st = force ? gs_reset_force() : gs_reset();
 	if (st != GS_OK)
 		return fail(st);
 	printf("Done. Reboot to finish restoring the original configuration.\n");
@@ -317,7 +318,7 @@ static int cmd_reset(bool yes)
 int main(int argc, char **argv)
 {
 	const char *cmd = NULL, *arg = NULL;
-	bool json = false, yes = false;
+	bool json = false, yes = false, force = false;
 
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "--json") == 0) {
@@ -334,6 +335,8 @@ int main(int argc, char **argv)
 			cmd = argv[i];
 		} else if (cmd && !arg && strcmp(cmd, "set") == 0 && argv[i][0] != '-') {
 			arg = argv[i];
+		} else if (cmd && strcmp(cmd, "reset") == 0 && strcmp(argv[i], "--force") == 0) {
+			force = true;
 		} else if (cmd && !arg && strcmp(cmd, "reset") == 0 && strcmp(argv[i], "--root") == 0 &&
 			   i + 1 < argc) {
 			arg = argv[++i];
@@ -366,7 +369,7 @@ int main(int argc, char **argv)
 	if (strcmp(cmd, "set") == 0) {
 		rc = cmd_set(sys, arg, yes);
 	} else if (strcmp(cmd, "reset") == 0) {
-		rc = cmd_reset(yes);
+		rc = cmd_reset(yes, force);
 	} else if (strcmp(cmd, "confirm") == 0) {
 		rc = cmd_confirm(sys);
 	} else if (strcmp(cmd, "modes") == 0 && json) {

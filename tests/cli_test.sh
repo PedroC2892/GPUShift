@@ -55,6 +55,7 @@ expect intel-nvidia 2 'unexpected argument' set hybrid integrated
 expect intel-nvidia 0 'Already in hybrid mode' set hybrid
 expect intel-nvidia 7 'No supported initramfs generator' set integrated --yes
 expect intel-nvidia 1 'use --yes' reset </dev/null
+expect intel-nvidia 1 'use --yes' reset --force </dev/null
 
 expect intel-nvidia 0 '' confirm   # nothing to confirm: silent no-op
 

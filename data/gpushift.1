@@ -13,6 +13,8 @@ gpushift \- show GPU information and switch GPU modes
 .B gpushift reset
 .RB [ \-\-yes ]
 .br
+.B gpushift reset \-\-force
+.br
 .B gpushift reset \-\-root
 .I dir
 .br
@@ -36,6 +38,10 @@ Switch to the given mode. Authenticates through polkit.
 .TP
 .B reset
 Remove every change made by GPUShift.
+.TP
+.B "reset \-\-force"
+Emergency reset: remove GPUShift's files and restore the firmware MUX even if
+the initramfs cannot be rebuilt.
 .TP
 .BI "reset \-\-root" " dir"
 Remove GPUShift's files from a system mounted at

@@ -163,6 +163,7 @@ boot; expect_rc 0; has $STATE "boot_attempts=1"
 boot; expect_rc 0; has $STATE "boot_attempts=2"
 [ "$(reboots)" -eq 0 ] || fail "rebooted too early"
 boot; expect_rc 0
+grep -q "restoring the previous GPU mode, do not power off" "$WORK/stderr" || fail "no console warning (M3)"
 has $STATE "mode=hybrid"
 has $STATE "pending=0"
 has $STATE "auto_reboot=1"

@@ -14,6 +14,9 @@ if [ -f "$UNIT" ]; then
 	# C2: the boot check must also run when GPUShift files exist without a state.
 	has "$UNIT" "ConditionPathExists=|/etc/modprobe.d/gpushift.conf"
 	has "$UNIT" "ConditionPathExists=|/etc/udev/rules.d/50-gpushift.rules"
+	# M3: progress is visible on the console while the screen is otherwise black.
+	has "$UNIT" "StandardOutput=journal+console"
+	has "$UNIT" "StandardError=journal+console"
 fi
 
 # The recovery guide must match the code (M1).

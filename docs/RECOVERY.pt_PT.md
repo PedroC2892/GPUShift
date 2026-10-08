@@ -19,6 +19,8 @@ anterior a partir do **terceiro arranque** sem confirmação: volta a pôr a
 configuração e o MUX do firmware anteriores, regenera o initramfs e reinicia
 uma vez. Por isso, se o ecrã ficar preto, reinicie (mantenha o botão de
 energia carregado se for preciso) e deixe-o arrancar mais duas vezes.
+Enquanto trabalha, a consola de texto mostra "gpushift: restoring the previous
+GPU mode, do not power off"; espere que termine (pode demorar alguns minutos).
 
 Se a própria reversão falhar (por exemplo, com `/boot` cheio), nada é
 alterado e volta a ser tentada em cada arranque seguinte; nunca reinicia em

@@ -526,6 +526,7 @@ gs_status gs_op_boot_check(gs_system *sys, int (*reboot_fn)(void))
 	 */
 	bool rebooted_before = state->auto_reboot;
 	state->auto_reboot = true;
+	msg("restoring the previous GPU mode, do not power off; this can take a few minutes");
 	snprintf(line, sizeof(line), "no confirmation after %d boots", state->boot_attempts);
 	gs_status st = revert(sys, line);
 	if (st != GS_OK) {

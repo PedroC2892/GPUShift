@@ -17,7 +17,9 @@ If the change is never confirmed, the `gpushift-boot-check` service restores
 the previous mode from the **third boot** without confirmation on: it puts the
 previous configuration and firmware MUX setting back, regenerates the
 initramfs and reboots once. So if the screen stays black, reboot (hold the
-power button if needed) and let it start two more times.
+power button if needed) and let it start two more times. While it works, the
+text console shows "gpushift: restoring the previous GPU mode, do not power
+off"; wait for it to finish (it can take a few minutes).
 
 If the revert itself fails (for example `/boot` is full), nothing is changed
 and it is tried again on every following boot; it never reboots in a loop.

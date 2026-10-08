@@ -11,8 +11,11 @@ ConditionKernelCommandLine=|gpushift.reset=1
 [Service]
 Type=oneshot
 ExecStart=@CMAKE_INSTALL_FULL_LIBEXECDIR@/gpushift-boot-check
-# Regenerating the initramfs can take a few minutes on slow disks.
+# Regenerating the initramfs can take a few minutes on slow disks; show the
+# progress on the console so nobody powers off a seemingly frozen boot.
 TimeoutStartSec=15min
+StandardOutput=journal+console
+StandardError=journal+console
 
 [Install]
 WantedBy=multi-user.target

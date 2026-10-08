@@ -8,3 +8,4 @@ endfunction()
 
 gpushift_unit_test(version)
 gpushift_unit_test(detect)
+gpushift_unit_test(modes)

@@ -119,8 +119,14 @@ polkit policy, confirmation autostart entry, recovery guide in
 `/usr/share/doc/gpushift/`) and `gpushift-gui` (Qt interface, desktop entry,
 icon, translations). Installing `gpushift` enables
 `gpushift-boot-check.service`; removing it first runs `gpushift-helper reset`,
-so no blacklist or udev rule is left behind, and purging deletes
-`/var/lib/gpushift`. The Debian packages depend on `libpci3`, `pci.ids`,
+so no blacklist, udev rule or MUX change is left behind. If the initramfs
+cannot be rebuilt, `gpushift-helper reset --force` still removes the files
+and restores the MUX (and asks you to rebuild the initramfs). If even that
+fails, the .deb and .rpm removal stops and the package stays installed;
+`GPUSHIFT_FORCE_REMOVE=1` overrides this. pacman cannot stop a removal, so
+the Arch package prints the manual steps instead. Purging deletes
+`/var/lib/gpushift` only when no change is still applied, so the backups of
+your original files are never lost. The Debian packages depend on `libpci3`, `pci.ids`,
 `pkexec` and `polkitd`; `gpushift-gui` depends on Qt 6 Widgets
 (`libqt6widgets6` on Debian 13, `libqt6widgets6t64` on Ubuntu 24.04).
 

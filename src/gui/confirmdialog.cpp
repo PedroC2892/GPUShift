@@ -12,11 +12,6 @@ namespace {
 
 constexpr int kSeconds = 30;
 
-QString tr(const char *text)
-{
-	return QCoreApplication::translate("Confirmation", text);
-}
-
 } // namespace
 
 int runConfirmation()
@@ -27,16 +22,16 @@ int runConfirmation()
 	if (!awaiting)
 		return 0;
 
-	QMessageBox box(QMessageBox::Question, tr("GPUShift"),
-			tr("The GPU mode was changed. Is the display working correctly?"));
-	auto *keep = box.addButton(tr("&Keep"), QMessageBox::AcceptRole);
-	box.addButton(tr("&Revert"), QMessageBox::RejectRole);
+	QMessageBox box(QMessageBox::Question, QCoreApplication::translate("Confirmation", "GPUShift"),
+			QCoreApplication::translate("Confirmation", "The GPU mode was changed. Is the display working correctly?"));
+	auto *keep = box.addButton(QCoreApplication::translate("Confirmation", "&Keep"), QMessageBox::AcceptRole);
+	box.addButton(QCoreApplication::translate("Confirmation", "&Revert"), QMessageBox::RejectRole);
 	box.setDefaultButton(keep);
 	box.setWindowFlag(Qt::WindowStaysOnTopHint);
 
 	int remaining = kSeconds;
 	const auto updateText = [&] {
-		box.setInformativeText(tr("Reverting to the previous mode in %1 seconds.").arg(remaining));
+		box.setInformativeText(QCoreApplication::translate("Confirmation", "Reverting to the previous mode in %1 seconds.").arg(remaining));
 	};
 	updateText();
 	QTimer timer;
@@ -56,11 +51,11 @@ int runConfirmation()
 	}
 	const gs_status st = gs_revert();
 	if (st == GS_OK)
-		QMessageBox::information(nullptr, tr("GPUShift"),
-					 tr("The previous GPU mode was restored. Reboot to use it."));
+		QMessageBox::information(nullptr, QCoreApplication::translate("Confirmation", "GPUShift"),
+					 QCoreApplication::translate("Confirmation", "The previous GPU mode was restored. Reboot to use it."));
 	else
-		QMessageBox::warning(nullptr, tr("GPUShift"),
-				     tr("Could not revert the GPU mode (error %1). Run 'sudo gpushift reset' "
+		QMessageBox::warning(nullptr, QCoreApplication::translate("Confirmation", "GPUShift"),
+				     QCoreApplication::translate("Confirmation", "Could not revert the GPU mode (error %1). Run 'sudo gpushift reset' "
 					"from a terminal.").arg(static_cast<int>(st)));
 	return st;
 }

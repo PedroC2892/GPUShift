@@ -2,6 +2,37 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="pt_PT">
 <context>
+    <name>Confirmation</name>
+    <message>
+        <source>GPUShift</source>
+        <translation>GPUShift</translation>
+    </message>
+    <message>
+        <source>The GPU mode was changed. Is the display working correctly?</source>
+        <translation>O modo da GPU foi alterado. O ecrã está a funcionar corretamente?</translation>
+    </message>
+    <message>
+        <source>&amp;Keep</source>
+        <translation>&amp;Manter</translation>
+    </message>
+    <message>
+        <source>&amp;Revert</source>
+        <translation>&amp;Reverter</translation>
+    </message>
+    <message>
+        <source>Reverting to the previous mode in %1 seconds.</source>
+        <translation>A reverter para o modo anterior dentro de %1 segundos.</translation>
+    </message>
+    <message>
+        <source>The previous GPU mode was restored. Reboot to use it.</source>
+        <translation>O modo anterior da GPU foi reposto. Reinicie para o usar.</translation>
+    </message>
+    <message>
+        <source>Could not revert the GPU mode (error %1). Run &apos;sudo gpushift reset&apos; from a terminal.</source>
+        <translation>Não foi possível reverter o modo da GPU (erro %1). Execute &apos;sudo gpushift reset&apos; num terminal.</translation>
+    </message>
+</context>
+<context>
     <name>MainWindow</name>
     <message>
         <source>Unknown</source>

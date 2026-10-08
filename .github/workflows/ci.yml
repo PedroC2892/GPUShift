@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.image }} / ${{ matrix.compiler }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+      # LeakSanitizer needs ptrace, which the default seccomp profile blocks.
+      options: --cap-add SYS_PTRACE --security-opt seccomp=unconfined
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [debian:stable, ubuntu:24.04, fedora:latest, archlinux:latest]
+        compiler: [gcc, clang]
+    env:
+      CC: ${{ matrix.compiler == 'clang' && 'clang' || 'gcc' }}
+      CXX: ${{ matrix.compiler == 'clang' && 'clang++' || 'g++' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sh .github/scripts/install-deps.sh
+      - name: Configure (Debug, ASan + UBSan)
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DGPUSHIFT_BUILD_GUI=ON
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Release build without the GUI
+        run: |
+          cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release -DGPUSHIFT_BUILD_GUI=OFF
+          cmake --build build-release --parallel
+          ctest --test-dir build-release --output-on-failure
+      - name: Install into a staging directory
+        run: DESTDIR="$PWD/stage" cmake --install build

@@ -105,13 +105,35 @@ translations. The polkit policy always goes to polkit's own directory
 (normally `/usr/share/polkit-1/actions`), because polkit does not read
 `/usr/local`.
 
-Packages (build them on the distribution they are meant for):
+Packages (build them on the distribution they are meant for, because the
+library dependencies are computed there):
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
 cmake --build build
-cd build && cpack            # gpushift_<version>_<arch>.deb and gpushift-<version>-1.<arch>.rpm
+cd build && cpack -G DEB     # or: cpack -G RPM
 ```
+
+This produces two packages: `gpushift` (CLI, helper, boot check service,
+polkit policy, confirmation autostart entry, recovery guide in
+`/usr/share/doc/gpushift/`) and `gpushift-gui` (Qt interface, desktop entry,
+icon, translations). Installing `gpushift` enables
+`gpushift-boot-check.service`; removing it first runs `gpushift-helper reset`,
+so no blacklist or udev rule is left behind, and purging deletes
+`/var/lib/gpushift`. The Debian packages depend on `libpci3`, `pci.ids`,
+`pkexec` and `polkitd`; `gpushift-gui` depends on Qt 6 Widgets
+(`libqt6widgets6` on Debian 13, `libqt6widgets6t64` on Ubuntu 24.04).
+
+CI builds, installs and removes the packages on Debian 13, Ubuntu 24.04 and
+Fedora on every push and keeps them as workflow artifacts. Pushing a `v*` tag
+attaches them to the GitHub Release.
+
+lintian reports no errors. The remaining tags are expected for a package that
+is not uploaded to the Debian archive: `initial-upload-closes-no-bugs`
+(warning: no ITP bug) and `binary-has-unneeded-section` (info). The
+maintainer scripts use `deb-systemd-helper`, Debian's equivalent of
+`systemctl enable`, which also works when systemd is not running (chroots,
+containers).
 
 For Arch Linux, use `packaging/arch/PKGBUILD` with `makepkg -si`.
 

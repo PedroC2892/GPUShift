@@ -1,0 +1,14 @@
+post_install() {
+	systemctl enable gpushift-boot-check.service >/dev/null 2>&1 || :
+}
+
+pre_remove() {
+	# Undo GPUShift's changes while the helper is still installed.
+	/usr/lib/gpushift/gpushift-helper reset ||
+		echo "gpushift: could not undo the GPU mode changes; see /usr/share/doc/gpushift/RECOVERY.md" >&2
+	systemctl disable gpushift-boot-check.service >/dev/null 2>&1 || :
+}
+
+post_remove() {
+	rm -rf /var/lib/gpushift /run/gpushift
+}

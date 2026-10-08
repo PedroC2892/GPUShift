@@ -7,7 +7,9 @@ arch=('x86_64' 'aarch64')
 url="https://github.com/PedroC2892/GPUShift"
 license=('GPL-3.0-or-later')
 depends=('glibc' 'pciutils' 'hwdata' 'polkit' 'qt6-base')
-makedepends=('cmake' 'qt6-tools')
+makedepends=('cmake' 'qt6-tools' 'systemd')
+install=gpushift.install
+backup=('etc/xdg/autostart/gpushift-confirm.desktop')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('SKIP')
 

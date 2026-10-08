@@ -407,6 +407,15 @@ static gs_status revert(gs_system *sys, const char *reason)
 {
 	static struct snapshot snap;
 	char path[PATH_MAX], prev[PATH_MAX], data[CONTENT_MAX];
+	if (sys->state.previous_mode == GS_MODE_NONE) {
+		/* Nothing known to revert to: back to the distribution defaults, panel on the iGPU. */
+		snprintf(path, sizeof(path), "resetting: %s", reason);
+		gs_op_log(path);
+		if (sys->mux && !sys->state.mux_backend[0] && sys->mux->get(sys->mux) == GS_MODE_DEDICATED &&
+		    sys->mux->set(sys->mux, GS_MODE_HYBRID) < 0)
+			gs_op_log("could not move the firmware MUX to the integrated GPU");
+		return gs_op_reset(sys, true);
+	}
 	if (!gs_sys_initramfs_tool(sys))
 		return GS_ERR_NO_INITRAMFS;
 	if (take_snapshot(&snap) < 0)
@@ -480,7 +489,21 @@ gs_status gs_op_boot_check(gs_system *sys, int (*reboot_fn)(void))
 			gs_op_log("reboot failed; reboot manually to finish the reset");
 		return st;
 	}
-	if (!sys->has_state || !sys->state.pending)
+	if (!sys->has_state) {
+		/* Files (or a state file) GPUShift cannot account for: an unconfirmed change to undo. */
+		bool leftovers = wpath(path, GS_STATE_FILE) == 0 && gs_exists(path);
+		for (size_t i = 0; i < NTARGETS; i++)
+			leftovers |= wpath(path, targets[i]) == 0 && gs_exists(path);
+		if (!leftovers)
+			return GS_OK;
+		gs_op_log("GPUShift files found without a valid state; treating them as an unconfirmed change");
+		memset(&sys->state, 0, sizeof(sys->state));
+		sys->state.mode = GS_MODE_DEFAULT;
+		sys->state.previous_mode = GS_MODE_NONE; /* unknown: reverting means a full reset */
+		sys->state.pending = true;
+		sys->has_state = true;
+	}
+	if (!sys->state.pending)
 		return GS_OK;
 
 	struct gs_state *state = &sys->state;

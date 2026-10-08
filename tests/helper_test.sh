@@ -234,6 +234,29 @@ absent $MODPROBE; absent $UDEV; absent /var/lib/gpushift
 boot; expect_rc 0   # parameter left in place: nothing to reset, no reboot loop
 [ "$(reboots)" -eq 1 ] || fail "reboot loop with a permanent gpushift.reset=1"
 
+new_case "M2: corrupted state with GPUShift files present" asus-mux
+fake_tool /usr/sbin/update-initramfs 0
+run apply dedicated; expect_rc 0
+boot; run confirm; expect_rc 0
+echo "mode=bogus" > "$ROOT$STATE"
+boot; expect_rc 0
+has $STATE "pending=1"
+has /var/lib/gpushift/log "without a valid state"
+boot; boot; expect_rc 0
+absent $MODPROBE; absent $STATE
+[ "$(cat "$SYS/sys/devices/platform/asus-nb-wmi/gpu_mux_mode")" = 1 ] || fail "MUX not moved to the iGPU"
+[ "$(reboots)" -eq 1 ] || fail "expected one reboot"
+
+new_case "M2: GPUShift files without any state" intel-nvidia
+fake_tool /usr/sbin/update-initramfs 0
+run apply integrated; expect_rc 0
+rm "$ROOT$STATE"
+boot; boot; boot; expect_rc 0
+absent $MODPROBE; absent $UDEV
+[ "$(reboots)" -eq 1 ] || fail "expected one reboot"
+boot
+[ "$(reboots)" -eq 1 ] || fail "rebooted again"
+
 new_case "boot check without GPUShift state" intel-nvidia
 boot; expect_rc 0
 absent /var/lib/gpushift

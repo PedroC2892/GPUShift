@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- GPUShift: a graphics chip with two arrows switching between GPUs. -->
+  <rect x="8" y="8" width="112" height="112" rx="22" fill="#1d2b3a"/>
+  <g fill="#8fa3b8">
+    <rect x="30" y="18" width="8" height="12" rx="2"/>
+    <rect x="50" y="18" width="8" height="12" rx="2"/>
+    <rect x="70" y="18" width="8" height="12" rx="2"/>
+    <rect x="90" y="18" width="8" height="12" rx="2"/>
+    <rect x="30" y="98" width="8" height="12" rx="2"/>
+    <rect x="50" y="98" width="8" height="12" rx="2"/>
+    <rect x="70" y="98" width="8" height="12" rx="2"/>
+    <rect x="90" y="98" width="8" height="12" rx="2"/>
+  </g>
+  <rect x="22" y="30" width="84" height="68" rx="10" fill="#2f4a63"/>
+  <path d="M38 52h44" stroke="#4fc3a1" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <path d="M74 40l14 12-14 12z" fill="#4fc3a1"/>
+  <path d="M90 78H46" stroke="#f2a33a" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <path d="M54 66L40 78l14 12z" fill="#f2a33a"/>
+</svg>

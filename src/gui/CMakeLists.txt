@@ -13,3 +13,7 @@ qt_add_translations(gpushift-gui
   TS_FILES ${PROJECT_SOURCE_DIR}/translations/gpushift_pt_PT.ts
   QM_FILES_OUTPUT_VARIABLE gpushift_qm_files)
 install(FILES ${gpushift_qm_files} DESTINATION ${CMAKE_INSTALL_DATADIR}/gpushift/translations)
+install(FILES ${PROJECT_SOURCE_DIR}/data/gpushift.desktop
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES ${PROJECT_SOURCE_DIR}/data/gpushift.svg
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)

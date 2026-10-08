@@ -204,19 +204,23 @@ has $PENDING "from=hybrid"
 run reset; expect_rc 0
 absent /var/lib/gpushift
 
-new_case "failed revert never loops" intel-nvidia
+new_case "A3: a failed revert is retried on the next boot, never loops" intel-nvidia
 fake_tool /usr/sbin/update-initramfs 0
 run apply integrated; expect_rc 0
 boot; boot
 fake_tool /usr/sbin/update-initramfs 1
 boot; expect_rc 9
-has $STATE "auto_reboot=1"
 has $STATE "pending=1"
 has $MODPROBE "blacklist nvidia"   # rolled back to the applied mode
+[ "$(reboots)" -eq 0 ] || fail "rebooted after a failed revert"
 fake_tool /usr/sbin/update-initramfs 0
 boot; expect_rc 0
-grep -q "not rebooting again" "$WORK/stderr" || fail "missing loop guard message"
-[ "$(reboots)" -eq 0 ] || fail "rebooted despite the failed revert"
+has $STATE "mode=hybrid"
+has $STATE "pending=0"
+absent $MODPROBE
+[ "$(reboots)" -eq 1 ] || fail "expected one reboot after the retried revert"
+boot; boot
+[ "$(reboots)" -eq 1 ] || fail "rebooted again after the revert"
 
 new_case "gpushift.reset=1 on the kernel command line" intel-nvidia
 fake_tool /usr/sbin/update-initramfs 0

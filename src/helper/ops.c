@@ -488,23 +488,34 @@ gs_status gs_op_boot_check(gs_system *sys, int (*reboot_fn)(void))
 	snprintf(line, sizeof(line), "unconfirmed boot %d of %d after switching to %s mode",
 		 state->boot_attempts, GS_MAX_BOOT_ATTEMPTS, gs_mode_name(state->mode));
 	gs_op_log(line);
-	if (state->boot_attempts < GS_MAX_BOOT_ATTEMPTS)
-		return write_state(state) < 0 ? GS_ERR_IO : GS_OK;
-	if (state->auto_reboot) {
-		gs_op_log("already rebooted once for this change; not rebooting again, use 'gpushift reset'");
-		return write_state(state) < 0 ? GS_ERR_IO : GS_OK;
-	}
-	/* Recorded before rebooting so a failed revert can never cause a reboot loop. */
-	state->auto_reboot = true;
-	if (write_state(state) < 0)
+	if (state->boot_attempts < GS_MAX_BOOT_ATTEMPTS) {
+		if (write_state(state) == 0)
+			return GS_OK;
+		gs_op_log("cannot record the boot count; automatic revert disabled, "
+			  "boot with gpushift.reset=1 to undo the change");
 		return GS_ERR_IO;
-	snprintf(line, sizeof(line), "no confirmation after %d boots", GS_MAX_BOOT_ATTEMPTS);
+	}
+
+	/*
+	 * Tried again on every boot until it works. The reboot only follows a
+	 * revert whose state (pending=0) is on disk, so it cannot loop, and at
+	 * most once per change (auto_reboot).
+	 */
+	bool rebooted_before = state->auto_reboot;
+	state->auto_reboot = true;
+	snprintf(line, sizeof(line), "no confirmation after %d boots", state->boot_attempts);
 	gs_status st = revert(sys, line);
 	if (st != GS_OK) {
 		gs_op_log(gs_strerror(st));
+		gs_op_log("revert failed; it is tried again on the next boot");
+		state->auto_reboot = rebooted_before;
+		if (write_state(state) < 0)
+			gs_op_log("cannot record the boot count");
 		return st;
 	}
-	if (reboot_fn() < 0)
+	if (rebooted_before)
+		gs_op_log("already rebooted once for this change; reboot manually to use the previous mode");
+	else if (reboot_fn() < 0)
 		gs_op_log("reboot failed; reboot manually to finish the revert");
 	return GS_OK;
 }

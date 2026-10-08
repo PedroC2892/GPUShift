@@ -32,7 +32,7 @@ static gs_status run_helper(const char *cmd, const char *arg)
 	/* pkexec: 126 = dialog dismissed, 127 = not authorized. */
 	if (via_pkexec && (rc == 126 || rc == 127))
 		return GS_ERR_AUTH;
-	return rc <= GS_ERR_AUTH ? (gs_status)rc : GS_ERR_GENERIC;
+	return rc <= GS_ERR_NOT_AWAITING ? (gs_status)rc : GS_ERR_GENERIC;
 }
 
 gs_status gs_apply_mode(gs_mode mode)
@@ -45,4 +45,14 @@ gs_status gs_apply_mode(gs_mode mode)
 gs_status gs_reset(void)
 {
 	return run_helper("reset", NULL);
+}
+
+gs_status gs_confirm(void)
+{
+	return run_helper("confirm", NULL);
+}
+
+gs_status gs_revert(void)
+{
+	return run_helper("revert", NULL);
 }

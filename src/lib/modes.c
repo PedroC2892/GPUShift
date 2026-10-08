@@ -117,6 +117,28 @@ gs_mode gs_current_mode(const gs_system *sys)
 									  : GS_MODE_HYBRID;
 }
 
+bool gs_awaiting_confirmation(const gs_system *sys)
+{
+	/* The pending marker in /run disappears on reboot: only then can a change be judged. */
+	return sys->has_state && sys->state.pending && sys->pending_to == GS_MODE_NONE;
+}
+
+int gs_unconfirmed_boots(const gs_system *sys)
+{
+	return gs_awaiting_confirmation(sys) ? sys->state.boot_attempts : 0;
+}
+
+const char *gs_recovery_text(void)
+{
+	return "If the screen stays black after rebooting:\n"
+	       "  1. Wait and reboot: after 3 boots without confirmation the previous mode\n"
+	       "     is restored automatically.\n"
+	       "  2. Press Ctrl+Alt+F3, log in and run: sudo gpushift reset && sudo reboot\n"
+	       "  3. In the boot menu press 'e', add gpushift.reset=1 to the 'linux' line\n"
+	       "     and boot with Ctrl+X or F10.\n"
+	       "Full guide: " GPUSHIFT_DOC_DIR "/RECOVERY.md\n";
+}
+
 gs_mode gs_pending_mode(const gs_system *sys)
 {
 	return sys->pending_to;
@@ -167,6 +189,7 @@ const char *gs_strerror(gs_status status)
 	case GS_ERR_MUX: return "Could not change the firmware GPU MUX";
 	case GS_ERR_PERMISSION: return "Administrator privileges are required";
 	case GS_ERR_AUTH: return "Authentication was cancelled or denied";
+	case GS_ERR_NOT_AWAITING: return "There is no unconfirmed mode change since the last reboot";
 	}
 	return "Unknown error";
 }

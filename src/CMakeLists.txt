@@ -19,6 +19,7 @@ target_include_directories(gpushift PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_compile_definitions(gpushift
   PRIVATE GPUSHIFT_VERSION="${PROJECT_VERSION}"
           GPUSHIFT_HELPER_PATH="${GPUSHIFT_HELPER_PATH}"
+          GPUSHIFT_DOC_DIR="${CMAKE_INSTALL_FULL_DOCDIR}"
   PUBLIC GPUSHIFT_MODPROBE_DIR="${GPUSHIFT_MODPROBE_DIR}"
          GPUSHIFT_UDEV_RULES_DIR="${GPUSHIFT_UDEV_RULES_DIR}")
 target_link_libraries(gpushift PUBLIC PkgConfig::LIBPCI ${CMAKE_DL_LIBS})

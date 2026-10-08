@@ -36,6 +36,11 @@ struct gs_state {
 	unsigned dgpu_vendor, dgpu_device;
 	char mux_backend[32];
 	char mux_orig[16];           /* MUX value before GPUShift changed it */
+	/* Confirmation of the last change (see gpushift-boot-check). */
+	bool pending;                /* applied, not yet confirmed after a reboot */
+	int boot_attempts;           /* boots since the change without confirmation */
+	gs_mode previous_mode;       /* mode to revert to */
+	bool auto_reboot;            /* boot check already rebooted once for this change */
 };
 
 struct gs_mux_backend {
@@ -95,6 +100,9 @@ int gs_sysfs_write(const char *path, const char *value);
 /* State files (state.c). */
 #define GS_STATE_FILE "/var/lib/gpushift/state"
 #define GS_PENDING_FILE "/run/gpushift/pending"
+#define GS_LOG_FILE "/var/lib/gpushift/log"
+#define GS_RECOVERY_FILE "/var/lib/gpushift/RECOVERY.txt"
+#define GS_MAX_BOOT_ATTEMPTS 3
 int gs_state_load(struct gs_state *st);  /* 0: loaded, -1: absent/invalid */
 int gs_state_format(const struct gs_state *st, char *buf, size_t n);
 void gs_load_state(struct gs_system *sys);
@@ -103,6 +111,7 @@ void gs_load_state(struct gs_system *sys);
 #define GS_MODPROBE_FILE GPUSHIFT_MODPROBE_DIR "/gpushift.conf"
 #define GS_UDEV_FILE GPUSHIFT_UDEV_RULES_DIR "/50-gpushift.rules"
 #define GS_BACKUP_DIR "/var/lib/gpushift/backup"
+#define GS_PREVIOUS_DIR GS_BACKUP_DIR "/previous" /* files of previous_mode */
 
 /* Builds the file contents for a mode; an empty string means "no file". */
 int gs_config_build(const gs_system *sys, gs_mode mode,

@@ -37,6 +37,14 @@ static void state_kv(void *ctx, const char *key, const char *value)
 		gs_strlcpy(st->mux_backend, value, sizeof(st->mux_backend));
 	else if (strcmp(key, "mux_orig") == 0)
 		gs_strlcpy(st->mux_orig, value, sizeof(st->mux_orig));
+	else if (strcmp(key, "pending") == 0)
+		st->pending = strcmp(value, "1") == 0;
+	else if (strcmp(key, "boot_attempts") == 0)
+		st->boot_attempts = atoi(value);
+	else if (strcmp(key, "previous_mode") == 0)
+		gs_mode_from_name(value, &st->previous_mode);
+	else if (strcmp(key, "auto_reboot") == 0)
+		st->auto_reboot = strcmp(value, "1") == 0;
 }
 
 int gs_state_load(struct gs_state *st)
@@ -57,9 +65,11 @@ int gs_state_format(const struct gs_state *st, char *buf, size_t n)
 	int r = snprintf(buf, n,
 			 "# Managed by gpushift-helper. Do not edit; use 'gpushift reset'.\n"
 			 "version=1\nmode=%s\ndgpu=%s\ndgpu_vendor=%04x\ndgpu_device=%04x\n"
-			 "mux_backend=%s\nmux_orig=%s\n",
+			 "mux_backend=%s\nmux_orig=%s\n"
+			 "pending=%d\nboot_attempts=%d\nprevious_mode=%s\nauto_reboot=%d\n",
 			 gs_mode_name(st->mode), st->dgpu, st->dgpu_vendor, st->dgpu_device,
-			 st->mux_backend, st->mux_orig);
+			 st->mux_backend, st->mux_orig, st->pending, st->boot_attempts,
+			 gs_mode_name(st->previous_mode), st->auto_reboot);
 	return (r < 0 || (size_t)r >= n) ? -1 : 0;
 }
 

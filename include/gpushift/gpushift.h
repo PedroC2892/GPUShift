@@ -34,6 +34,7 @@ typedef enum {
 	GS_ERR_MUX = 10,             /* writing the firmware MUX failed */
 	GS_ERR_PERMISSION = 11,      /* the helper was not run as root */
 	GS_ERR_AUTH = 12,            /* polkit authentication denied or cancelled */
+	GS_ERR_NOT_AWAITING = 13,    /* no unconfirmed change after a reboot */
 } gs_status;
 
 typedef enum {
@@ -133,6 +134,19 @@ gs_mode gs_pending_mode(const gs_system *sys);
  */
 gs_status gs_apply_mode(gs_mode mode);
 gs_status gs_reset(void);
+
+/*
+ * After a reboot, a change stays unconfirmed until the user confirms it from
+ * a working graphical session. gpushift-boot-check reverts it automatically
+ * after GS_MAX_BOOT_ATTEMPTS unconfirmed boots.
+ */
+bool gs_awaiting_confirmation(const gs_system *sys);
+int gs_unconfirmed_boots(const gs_system *sys);
+/* Neither needs a password: both only act on an unconfirmed change. */
+gs_status gs_confirm(void);
+gs_status gs_revert(void);
+/* Short English instructions shown before applying a mode. */
+const char *gs_recovery_text(void);
 
 #ifdef __cplusplus
 }

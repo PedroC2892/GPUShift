@@ -1,0 +1,29 @@
+# Maintainer: Pedro Cruz
+pkgname=gpushift
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="GPU mode manager for Linux laptops (integrated, hybrid, dedicated)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/PedroC2892/GPUShift"
+license=('GPL-3.0-or-later')
+depends=('glibc' 'pciutils' 'hwdata' 'polkit' 'qt6-base')
+makedepends=('cmake' 'qt6-tools')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+	cmake -S "GPUShift-$pkgver" -B build \
+		-DCMAKE_BUILD_TYPE=None \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBEXECDIR=lib/gpushift \
+		-DGPUSHIFT_BUILD_GUI=ON
+	cmake --build build
+}
+
+check() {
+	ctest --test-dir build --output-on-failure
+}
+
+package() {
+	DESTDIR="$pkgdir" cmake --install build
+}

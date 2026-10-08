@@ -38,3 +38,7 @@ if(BUILD_TESTING)
   target_link_libraries(gpushift-helper-test PRIVATE gpushift)
   target_compile_definitions(gpushift-helper-test PRIVATE GPUSHIFT_TEST_HOOKS)
 endif()
+
+if(GPUSHIFT_BUILD_GUI)
+  add_subdirectory(gui)
+endif()

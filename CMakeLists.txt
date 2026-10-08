@@ -5,6 +5,9 @@ project(gpushift VERSION 0.1.0
         LANGUAGES C)
 
 option(GPUSHIFT_BUILD_GUI "Build the Qt6 graphical interface" ON)
+if(GPUSHIFT_BUILD_GUI)
+  enable_language(CXX)
+endif()
 include(CTest)
 include(GNUInstallDirs)
 

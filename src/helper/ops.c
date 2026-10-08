@@ -152,11 +152,19 @@ void gs_op_log(const char *text)
 	}
 }
 
-static int take_snapshot(struct snapshot *s)
+typedef int (*path_fn)(char *buf, const char *target);
+
+static int target_path(char *buf, const char *target)
+{
+	return wpath(buf, target);
+}
+
+/* Contents of the targets (or of their copies in another directory, by path function). */
+static int take_snapshot_at(struct snapshot *s, path_fn where)
 {
 	char path[PATH_MAX];
 	for (size_t i = 0; i < NTARGETS; i++) {
-		if (wpath(path, targets[i]) < 0)
+		if (where(path, targets[i]) < 0)
 			return -1;
 		s->exists[i] = gs_exists(path);
 		s->data[i][0] = '\0';
@@ -166,15 +174,25 @@ static int take_snapshot(struct snapshot *s)
 	return 0;
 }
 
-static void restore_snapshot(const struct snapshot *s)
+static void restore_snapshot_at(const struct snapshot *s, path_fn where)
 {
 	char path[PATH_MAX];
 	for (size_t i = 0; i < NTARGETS; i++) {
-		if (wpath(path, targets[i]) < 0)
+		if (where(path, targets[i]) < 0)
 			continue;
 		if (s->exists[i] ? write_atomic(path, s->data[i]) : remove_file(path))
 			fprintf(stderr, "gpushift: could not restore %s\n", path);
 	}
+}
+
+static int take_snapshot(struct snapshot *s)
+{
+	return take_snapshot_at(s, target_path);
+}
+
+static void restore_snapshot(const struct snapshot *s)
+{
+	restore_snapshot_at(s, target_path);
 }
 
 /* Before GPUShift first writes to /etc, keep any file it is about to replace. */
@@ -223,9 +241,19 @@ static gs_status check_switchable(const gs_system *sys)
 	}
 }
 
+/* Undoes the intent written by an apply that failed: state and previous files. */
+static void restore_old_state(const gs_system *sys, const struct snapshot *prev)
+{
+	char path[PATH_MAX];
+	restore_snapshot_at(prev, previous_path);
+	if (sys->has_state ? write_state(&sys->state) < 0
+			   : (wpath(path, GS_STATE_FILE) < 0 || remove_file(path) < 0))
+		msg("could not restore the previous state file");
+}
+
 gs_status gs_op_apply(gs_system *sys, gs_mode mode)
 {
-	static struct snapshot snap;
+	static struct snapshot snap, prev_snap;
 	char modprobe[CONTENT_MAX], udev[CONTENT_MAX], path[PATH_MAX];
 	gs_status st = check_switchable(sys);
 	if (st != GS_OK)
@@ -242,28 +270,9 @@ gs_status gs_op_apply(gs_system *sys, gs_mode mode)
 	gs_mode from = gs_current_mode(sys);
 	const struct gs_mux_backend *mux = sys->mux;
 	gs_mode mux_prev = mux ? mux->get(mux) : GS_MODE_NONE;
-	if (mux && mux->set(mux, mode) < 0)
-		return GS_ERR_MUX;
-
-	const char *contents[NTARGETS] = { modprobe, udev };
-	st = GS_OK;
-	for (size_t i = 0; i < NTARGETS && st == GS_OK; i++)
-		if (wpath(path, targets[i]) < 0 || put_file(path, contents[i]) < 0)
-			st = GS_ERR_IO;
-	if (st == GS_OK && run_initramfs() < 0)
-		st = GS_ERR_INITRAMFS_FAILED;
-	if (st != GS_OK) {
-		restore_snapshot(&snap);
-		if (mux)
-			mux->set(mux, mux_prev);
-		return st;
-	}
 
 	/* A change not yet booted keeps the previous mode it would revert to. */
 	bool keep_previous = sys->has_state && sys->state.pending && sys->pending_to != GS_MODE_NONE;
-	if (!keep_previous && save_previous(&snap) < 0)
-		return GS_ERR_IO;
-
 	struct gs_state state = sys->state;
 	const struct gs_gpu *dgpu = gs_dgpu(sys);
 	state.mode = mode;
@@ -280,7 +289,37 @@ gs_status gs_op_apply(gs_system *sys, gs_mode mode)
 		gs_strlcpy(state.mux_backend, mux->name, sizeof(state.mux_backend));
 		gs_strlcpy(state.mux_orig, gs_mode_name(mux_prev), sizeof(state.mux_orig));
 	}
-	if (write_state(&state) < 0 || write_pending(from, mode) < 0 ||
+
+	/*
+	 * Intent first: the state (with the original MUX value) and the files to
+	 * revert to are on disk before anything changes, so a crash or power loss
+	 * from here on still leaves an unconfirmed change the boot check reverts.
+	 */
+	if (take_snapshot_at(&prev_snap, previous_path) < 0)
+		return GS_ERR_IO;
+	if ((!keep_previous && save_previous(&snap) < 0) || write_state(&state) < 0) {
+		restore_old_state(sys, &prev_snap);
+		return GS_ERR_IO;
+	}
+
+	st = GS_OK;
+	if (mux && mux->set(mux, mode) < 0)
+		st = GS_ERR_MUX;
+	const char *contents[NTARGETS] = { modprobe, udev };
+	for (size_t i = 0; i < NTARGETS && st == GS_OK; i++)
+		if (wpath(path, targets[i]) < 0 || put_file(path, contents[i]) < 0)
+			st = GS_ERR_IO;
+	if (st == GS_OK && run_initramfs() < 0)
+		st = GS_ERR_INITRAMFS_FAILED;
+	if (st != GS_OK) {
+		restore_snapshot(&snap);
+		if (mux)
+			mux->set(mux, mux_prev);
+		restore_old_state(sys, &prev_snap);
+		return st;
+	}
+
+	if (write_pending(from, mode) < 0 ||
 	    wpath(path, GS_RECOVERY_FILE) < 0 || write_atomic(path, gs_recovery_text()) < 0)
 		return GS_ERR_IO;
 	return GS_OK;

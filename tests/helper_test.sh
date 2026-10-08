@@ -235,6 +235,42 @@ boot; expect_rc 0
 absent /var/lib/gpushift
 [ "$(reboots)" -eq 0 ] || fail "rebooted without state"
 
+new_case "C2: crash during apply, state written first" asus-mux
+printf '#!/bin/sh\nkill -9 $PPID\n' > "$WORK/killer"
+fake_tool /usr/sbin/update-initramfs 0
+cp "$WORK/killer" "$ROOT/usr/sbin/update-initramfs"
+run apply dedicated   # killed while regenerating: MUX and files already changed
+[ "$(cat "$SYS/sys/devices/platform/asus-nb-wmi/gpu_mux_mode")" = 0 ] || fail "MUX should be switched by then"
+has $STATE "pending=1"
+has $STATE "previous_mode=hybrid"
+has $STATE "mux_backend=asus-wmi"
+has $STATE "mux_orig=hybrid"
+fake_tool /usr/sbin/update-initramfs 0
+boot; boot; boot; expect_rc 0
+[ "$(cat "$SYS/sys/devices/platform/asus-nb-wmi/gpu_mux_mode")" = 1 ] || fail "MUX not reverted after the crash"
+absent $MODPROBE
+[ "$(reboots)" -eq 1 ] || fail "expected one reboot after the revert"
+
+new_case "C2: reset after a crash restores the MUX" asus-mux
+fake_tool /usr/sbin/update-initramfs 0
+cp "$WORK/killer" "$ROOT/usr/sbin/update-initramfs"
+run apply dedicated
+fake_tool /usr/sbin/update-initramfs 0
+run reset; expect_rc 0
+[ "$(cat "$SYS/sys/devices/platform/asus-nb-wmi/gpu_mux_mode")" = 1 ] || fail "MUX not restored by reset"
+absent $MODPROBE; absent $STATE
+
+new_case "C2: failed apply restores the previous state" intel-nvidia
+fake_tool /usr/sbin/update-initramfs 0
+run apply integrated; expect_rc 0
+boot; run confirm; expect_rc 0
+cp "$ROOT$STATE" "$WORK/state.before"
+fake_tool /usr/sbin/update-initramfs 1
+run apply hybrid; expect_rc 9
+cmp -s "$ROOT$STATE" "$WORK/state.before" || fail "state not restored after a failed apply"
+has $MODPROBE "blacklist nvidia"
+[ ! -e "$ROOT/var/lib/gpushift/backup/previous/gpushift.conf" ] || fail "previous files changed by a failed apply"
+
 new_case "refusals" single-intel
 fake_tool /usr/sbin/update-initramfs 0
 run apply hybrid; expect_rc 3

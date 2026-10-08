@@ -19,3 +19,6 @@ add_test(NAME helper
   COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/helper_test.sh
           $<TARGET_FILE:gpushift-helper-test> $<TARGET_FILE:gpushift-cli>
           ${CMAKE_CURRENT_SOURCE_DIR}/fixtures $<TARGET_FILE:gpushift-boot-check-test>)
+
+add_test(NAME data
+  COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/data_test.sh ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR})

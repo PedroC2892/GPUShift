@@ -130,6 +130,8 @@ gpushift status [--json]    System and GPU information, plus the mode summary
 gpushift modes [--json]     Current mode, pending mode and available modes
 gpushift set <mode> [--yes] Switch to integrated, hybrid or dedicated
 gpushift reset [--yes]      Remove every change made by GPUShift
+gpushift reset --root <dir> Remove GPUShift's files from a system mounted at <dir>
+gpushift confirm            Confirm that the display works after a mode change
 ```
 
 `set` and `reset` ask for confirmation (skip it with `--yes`; it is required
@@ -173,6 +175,7 @@ Exit codes (shared by `gpushift` and `gpushift-helper`):
 | 10 | Could not change the firmware MUX |
 | 11 | Not root, and `pkexec` not found |
 | 12 | polkit authentication cancelled or denied |
+| 13 | No unconfirmed mode change since the last reboot (`confirm`, revert) |
 
 ## What each mode changes
 
@@ -207,30 +210,34 @@ GPUShift owns two files and one state directory. Before it first writes to
 
 After writing, the initramfs is regenerated so that early boot sees the same
 module configuration. State is kept in `/var/lib/gpushift/state`
-(`key=value`) and a pending change in `/run/gpushift/pending`.
+(`key=value`) and a pending change in `/run/gpushift/pending`. The files of
+the mode being replaced are kept in `/var/lib/gpushift/backup/previous/` so
+the change can be reverted, and the recovery instructions are written to
+`/var/lib/gpushift/RECOVERY.txt`.
 
-## Reverting manually
+## Recovery
 
-`gpushift reset` undoes everything. If you cannot run it (for example, no
-graphical session), do the same by hand from a text console (Ctrl+Alt+F3) or a
-rescue boot (add `systemd.unit=multi-user.target` to the kernel command line
-from the boot menu for that one boot):
+A mode change never leaves you without a way back. In order:
 
-```sh
-sudo rm -f /etc/modprobe.d/gpushift.conf /etc/udev/rules.d/50-gpushift.rules
-# Restore files that existed before GPUShift, if any were backed up:
-ls /var/lib/gpushift/backup/
-sudo cp /var/lib/gpushift/backup/gpushift.conf /etc/modprobe.d/        # only if present
-sudo cp /var/lib/gpushift/backup/50-gpushift.rules /etc/udev/rules.d/  # only if present
-sudo rm -rf /var/lib/gpushift
-# ASUS MUX back to hybrid (only if you used Dedicated mode):
-echo 1 | sudo tee /sys/devices/platform/asus-nb-wmi/gpu_mux_mode
-# Regenerate the initramfs with your distribution's tool:
-sudo update-initramfs -u -k all      # Debian, Ubuntu
-sudo dracut --force --regenerate-all # Fedora, openSUSE
-sudo mkinitcpio -P                   # Arch
-sudo reboot
-```
+1. **Automatic.** A change stays unconfirmed until you log in to a graphical
+   session after the reboot (`gpushift confirm` runs from XDG autostart; with
+   the GUI installed it asks *Keep* or *Revert* and reverts after 30 seconds
+   without an answer). `gpushift-boot-check.service` counts unconfirmed boots
+   and, on the third, restores the previous mode, regenerates the initramfs
+   and reboots once.
+2. **Text console:** Ctrl+Alt+F3, log in, `sudo gpushift reset`, `sudo reboot`.
+3. **Boot parameter:** add `gpushift.reset=1` to the kernel line from the GRUB
+   (`e`, then Ctrl+X) or systemd-boot (`e`, then Enter) menu.
+4. **Text mode:** boot with `systemd.unit=multi-user.target`, then
+   `sudo gpushift reset`.
+5. **Live USB:** mount the root partition and run
+   `sudo gpushift reset --root /mnt`, or delete the two GPUShift files by hand
+   and regenerate the initramfs in a chroot.
+
+The full step-by-step guide is in [docs/RECOVERY.md](docs/RECOVERY.md)
+(Portuguese: [docs/RECOVERY.pt_PT.md](docs/RECOVERY.pt_PT.md)) and is
+installed to `/usr/share/doc/gpushift/`. Without systemd the boot check is not
+installed, so step 1 is not available; steps 2 to 5 work everywhere.
 
 ## Design decisions
 
@@ -295,6 +302,19 @@ safest, most portable and simplest option.
   (`/etc`, `/var/lib`, `/run`, initramfs tools). The installed helper drops
   both variables; only the uninstalled `gpushift-helper-test` honours them,
   and it refuses to run without `GPUSHIFT_ETC_ROOT`.
+- **Confirmation and automatic revert.** The boot counter lives in the state
+  file; "rebooted since the change" is the absence of the `/run` marker, so a
+  re-login without reboot never confirms a change. The boot check reboots at
+  most once per change (`auto_reboot` is recorded before rebooting), and
+  `gpushift.reset=1` only reboots when it actually removed something, so a
+  parameter left in the bootloader cannot cause a loop. Confirm and revert
+  have their own polkit actions (`org.gpushift.confirm`,
+  `org.gpushift.revert`, selected by `argv1`) that need no password: they must
+  work unattended at login, and they only act on an unconfirmed change after a
+  reboot. A revert started by the GUI does not reboot by itself.
+- **Offline reset.** `gpushift reset --root <dir>` writes directly below
+  `<dir>` without the helper: it is meant to be run as root from a live
+  system, where pkexec and the installed system's polkit do not apply.
 - **Static library.** libgpushift is linked statically into the three
   programs and not installed; its API is not stable yet.
 - **GUI.** The Mode section comes first, then system and per-GPU cards. No

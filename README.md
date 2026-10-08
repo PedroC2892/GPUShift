@@ -53,6 +53,12 @@ Hardware:
   modules must already be signed by your distribution or by you.
 - The kernel command line and the bootloader configuration are never touched.
 - The Lenovo Legion backend has not been validated on real hardware yet.
+- Mode changes are confirmed by an XDG autostart entry at login. In sessions
+  without XDG autostart (i3, sway and other bare window managers, or text-only
+  use) run `gpushift confirm` after a change, or a working mode is reverted on
+  the third boot (with one automatic reboot).
+- Integrated mode blacklists the dGPU vendor's driver, so an
+  external GPU (eGPU) of the same vendor does not work while it is active.
 
 ## Dependencies
 

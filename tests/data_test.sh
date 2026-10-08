@@ -33,4 +33,11 @@ for doc in "$SRC/docs/RECOVERY.md" "$SRC/docs/RECOVERY.pt_PT.md"; do
 	done
 done
 
+# M4: limits that can surprise users are documented.
+for doc in "$SRC/README.md" "$SRC/docs/RECOVERY.md"; do
+	has "$doc" "without XDG autostart"
+done
+has "$SRC/docs/RECOVERY.pt_PT.md" "sem arranque automático XDG"
+has "$SRC/README.md" "external GPU (eGPU)"
+
 [ "$failures" -eq 0 ] || exit 1

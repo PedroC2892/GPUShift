@@ -31,7 +31,10 @@ O motivo fica registado em `/var/lib/gpushift/log` e no journal
 (`journalctl -u gpushift-boot-check`).
 
 Este passo precisa do systemd. Em sistemas sem systemd o serviço não é
-instalado e só estão disponíveis os passos 2 a 5.
+instalado e só estão disponíveis os passos 2 a 5. Em sessões
+sem arranque automático XDG (i3, sway, outros gestores de janelas simples, uso
+só em modo de texto) execute `gpushift confirm` depois de uma troca, senão ela é revertida no
+terceiro arranque.
 
 ## 2. Consola de texto (TTY)
 

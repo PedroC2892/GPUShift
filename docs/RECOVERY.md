@@ -30,7 +30,10 @@ The reason is recorded in `/var/lib/gpushift/log` and in the journal
 (`journalctl -u gpushift-boot-check`).
 
 This step needs systemd. On systems without systemd the service is not
-installed and only steps 2 to 5 are available.
+installed and only steps 2 to 5 are available. In sessions
+without XDG autostart (i3, sway, other bare window managers, text-only use) run
+`gpushift confirm` yourself after a change, or it is reverted on the third
+boot.
 
 ## 2. Text console (TTY)
 

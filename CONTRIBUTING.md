@@ -25,8 +25,10 @@ change; CI does the same on Debian, Ubuntu, Fedora and Arch.
 |------|------|
 | `include/gpushift/gpushift.h` | Public C API |
 | `src/lib/` | libgpushift: detection, modes, MUX, conflicts, state, initramfs |
-| `src/helper/helper.c` | `gpushift-helper`, the only program that writes |
-| `src/cli/main.c` | `gpushift` |
+| `src/helper/ops.c` | Privileged operations: apply, reset, confirm, revert, boot check |
+| `src/helper/helper.c` | `gpushift-helper`, the only program that writes from a session |
+| `src/helper/boot-check.c` | `gpushift-boot-check`, run once per boot by systemd |
+| `src/cli/` | `gpushift`, including the offline `reset --root` |
 | `src/gui/` | `gpushift-gui` |
 | `tests/fixtures/` | Fake `/sys`, `/proc` and `/etc` trees, one per scenario |
 | `tests/*.c`, `tests/*.sh` | Unit tests and black-box CLI and helper tests |

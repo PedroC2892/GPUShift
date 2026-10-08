@@ -145,6 +145,19 @@ absent $UDEV
 run reset; expect_rc 0
 [ "$(cat "$SYS/sys/devices/platform/asus-nb-wmi/gpu_mux_mode")" = 1 ] || fail "MUX not restored"
 
+new_case "B2: MUX that appears after the first change is still restored" asus-mux
+fake_tool /usr/sbin/update-initramfs 0
+MUXDIR=$SYS/sys/devices/platform/asus-nb-wmi
+mv "$MUXDIR/gpu_mux_mode" "$WORK/gpu_mux_mode"   # backend module not loaded yet
+run apply integrated; expect_rc 0
+mv "$WORK/gpu_mux_mode" "$MUXDIR/gpu_mux_mode"
+boot; run confirm; expect_rc 0
+run apply dedicated; expect_rc 0
+has $STATE "mux_backend=asus-wmi"
+has $STATE "mux_orig=hybrid"
+run reset; expect_rc 0
+[ "$(cat "$MUXDIR/gpu_mux_mode")" = 1 ] || fail "MUX not restored"
+
 new_case "integrated mode after reboot: dGPU gone from the bus" intel-nvidia
 fake_tool /usr/sbin/update-initramfs 0
 run apply integrated; expect_rc 0

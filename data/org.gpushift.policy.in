@@ -18,4 +18,32 @@
     </defaults>
     <annotate key="org.freedesktop.policykit.exec.path">@GPUSHIFT_HELPER_PATH@</annotate>
   </action>
+  <!-- confirm and revert only act on an unconfirmed change after a reboot,
+       and must work unattended at login, so they need no password. -->
+  <action id="org.gpushift.confirm">
+    <description>Confirm a GPU mode change</description>
+    <description xml:lang="pt_PT">Confirmar uma troca de modo da GPU</description>
+    <message>Confirming the GPU mode change</message>
+    <message xml:lang="pt_PT">A confirmar a troca de modo da GPU</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@GPUSHIFT_HELPER_PATH@</annotate>
+    <annotate key="org.freedesktop.policykit.exec.argv1">confirm</annotate>
+  </action>
+  <action id="org.gpushift.revert">
+    <description>Revert an unconfirmed GPU mode change</description>
+    <description xml:lang="pt_PT">Reverter uma troca de modo da GPU não confirmada</description>
+    <message>Reverting the GPU mode change</message>
+    <message xml:lang="pt_PT">A reverter a troca de modo da GPU</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@GPUSHIFT_HELPER_PATH@</annotate>
+    <annotate key="org.freedesktop.policykit.exec.argv1">revert</annotate>
+  </action>
 </policyconfig>

@@ -42,6 +42,14 @@ if(NOT _polkit_policydir)
 endif()
 set(GPUSHIFT_POLKIT_ACTIONS_DIR "${_polkit_policydir}" CACHE PATH "polkit actions directory")
 
+# The boot check unit is only installed where systemd is found; without it
+# only the manual recovery methods exist (see docs/RECOVERY.md).
+pkg_get_variable(_systemd_unitdir systemd systemdsystemunitdir)
+set(GPUSHIFT_SYSTEMD_UNIT_DIR "${_systemd_unitdir}" CACHE PATH
+    "systemd system unit directory (empty: do not install the boot check unit)")
+# XDG autostart is read from /etc/xdg (XDG_CONFIG_DIRS), whatever the prefix.
+set(GPUSHIFT_AUTOSTART_DIR "/etc/xdg/autostart" CACHE PATH "XDG autostart directory")
+
 set(GPUSHIFT_HELPER_PATH "${CMAKE_INSTALL_FULL_LIBEXECDIR}/gpushift-helper")
 
 add_subdirectory(src)

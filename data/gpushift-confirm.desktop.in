@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=GPUShift confirmation
+Name[pt_PT]=Confirmação do GPUShift
+Comment=Confirms that the display works after a GPU mode change
+Comment[pt_PT]=Confirma que o ecrã funciona depois de uma troca de modo da GPU
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/gpushift confirm
+Icon=gpushift
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

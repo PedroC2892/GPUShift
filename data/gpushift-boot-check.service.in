@@ -1,0 +1,16 @@
+[Unit]
+Description=GPUShift boot check (reverts unconfirmed GPU mode changes)
+Documentation=file://@CMAKE_INSTALL_FULL_DOCDIR@/RECOVERY.md
+After=local-fs.target
+Before=display-manager.service systemd-user-sessions.service
+ConditionPathExists=|/var/lib/gpushift/state
+ConditionKernelCommandLine=|gpushift.reset=1
+
+[Service]
+Type=oneshot
+ExecStart=@CMAKE_INSTALL_FULL_LIBEXECDIR@/gpushift-boot-check
+# Regenerating the initramfs can take a few minutes on slow disks.
+TimeoutStartSec=15min
+
+[Install]
+WantedBy=multi-user.target

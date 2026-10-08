@@ -145,8 +145,8 @@ QGroupBox *MainWindow::buildGpuBox(size_t index)
 
 	QString kind;
 	switch (gs_gpu_get_kind(g)) {
-	case GS_GPU_INTEGRATED: kind = tr("Integrated"); break;
-	case GS_GPU_DEDICATED: kind = tr("Dedicated"); break;
+	case GS_GPU_INTEGRATED: kind = tr("Integrated", "GPU type"); break;
+	case GS_GPU_DEDICATED: kind = tr("Dedicated", "GPU type"); break;
 	default: kind = tr("Unknown"); break;
 	}
 	if (gs_gpu_boot_vga(g))
@@ -276,11 +276,11 @@ void MainWindow::runHelper(const QString &busyText, gs_status (*task)(gs_mode), 
 QString MainWindow::modeTitle(gs_mode mode)
 {
 	switch (mode) {
-	case GS_MODE_INTEGRATED: return tr("Integrated");
-	case GS_MODE_HYBRID: return tr("Hybrid");
-	case GS_MODE_DEDICATED: return tr("Dedicated");
-	case GS_MODE_DEFAULT: return tr("Default");
-	default: return tr("None");
+	case GS_MODE_INTEGRATED: return tr("Integrated", "GPU mode");
+	case GS_MODE_HYBRID: return tr("Hybrid", "GPU mode");
+	case GS_MODE_DEDICATED: return tr("Dedicated", "GPU mode");
+	case GS_MODE_DEFAULT: return tr("Default", "GPU mode");
+	default: return tr("None", "GPU mode");
 	}
 }
 
@@ -308,7 +308,7 @@ QString MainWindow::switchMessage(gs_switch sw)
 		return tr("This system has only one GPU, so there are no modes to switch.");
 	case GS_SWITCH_DESKTOP:
 		return tr("This is not a laptop. GPU modes are only managed on laptops; the information "
-			  "above is shown for reference.");
+			  "below is shown for reference.");
 	case GS_SWITCH_UNSUPPORTED:
 		return tr("This GPU combination is not supported: GPUShift needs one integrated GPU "
 			  "that can drive the internal display and one dedicated GPU.");

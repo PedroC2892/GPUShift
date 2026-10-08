@@ -18,4 +18,4 @@ gpushift_unit_test(config)
 add_test(NAME helper
   COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/helper_test.sh
           $<TARGET_FILE:gpushift-helper-test> $<TARGET_FILE:gpushift-cli>
-          ${CMAKE_CURRENT_SOURCE_DIR}/fixtures)
+          ${CMAKE_CURRENT_SOURCE_DIR}/fixtures $<TARGET_FILE:gpushift-boot-check-test>)

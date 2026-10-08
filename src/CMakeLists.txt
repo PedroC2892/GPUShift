@@ -29,16 +29,22 @@ set_target_properties(gpushift-cli PROPERTIES OUTPUT_NAME gpushift)
 target_link_libraries(gpushift-cli PRIVATE gpushift)
 install(TARGETS gpushift-cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-add_executable(gpushift-helper helper/helper.c)
-target_link_libraries(gpushift-helper PRIVATE gpushift)
-install(TARGETS gpushift-helper RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
-
-if(BUILD_TESTING)
-  # Same helper with test hooks: never installed, only writes below $GPUSHIFT_ETC_ROOT.
-  add_executable(gpushift-helper-test helper/helper.c)
-  target_link_libraries(gpushift-helper-test PRIVATE gpushift)
-  target_compile_definitions(gpushift-helper-test PRIVATE GPUSHIFT_TEST_HOOKS)
-endif()
+# The privileged programs. *-test variants have test hooks, are never
+# installed and only write below $GPUSHIFT_ETC_ROOT.
+foreach(prog helper boot-check)
+  set(variants gpushift-${prog})
+  if(BUILD_TESTING)
+    list(APPEND variants gpushift-${prog}-test)
+  endif()
+  foreach(target ${variants})
+    add_executable(${target} helper/${prog}.c helper/ops.c)
+    target_link_libraries(${target} PRIVATE gpushift)
+  endforeach()
+  if(BUILD_TESTING)
+    target_compile_definitions(gpushift-${prog}-test PRIVATE GPUSHIFT_TEST_HOOKS)
+  endif()
+  install(TARGETS gpushift-${prog} RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
+endforeach()
 
 if(GPUSHIFT_BUILD_GUI)
   add_subdirectory(gui)

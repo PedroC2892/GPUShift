@@ -11,11 +11,11 @@ debian | ubuntu)
 	apt-get install -y --no-install-recommends \
 		build-essential clang libclang-rt-dev cmake pkg-config libpci-dev pci.ids \
 		qt6-base-dev qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools \
-		libpolkit-gobject-1-dev systemd-dev
+		libpolkit-gobject-1-dev systemd-dev file dpkg-dev
 	;;
 fedora)
 	dnf install -y gcc gcc-c++ libasan libubsan clang compiler-rt cmake pkgconf-pkg-config \
-		pciutils-devel hwdata qt6-qtbase-devel qt6-qttools-devel polkit-devel systemd-devel
+		pciutils-devel hwdata qt6-qtbase-devel qt6-qttools-devel polkit-devel systemd-devel file rpm-build
 	;;
 arch)
 	pacman -Syu --noconfirm --needed base-devel clang compiler-rt cmake pkgconf pciutils \

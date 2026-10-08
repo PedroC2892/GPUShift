@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  packages:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+    strategy:
+      matrix:
+        include:
+          - image: debian:trixie
+            kind: deb
+            suffix: debian13
+          - image: ubuntu:24.04
+            kind: deb
+            suffix: ubuntu24.04
+          - image: fedora:latest
+            kind: rpm
+            suffix: fedora
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sh .github/scripts/install-deps.sh
+      - name: Build and test the packages
+        run: sh .github/scripts/package.sh ${{ matrix.kind }}
+      # The same file name is built on Debian and Ubuntu; tag it with the target.
+      - name: Name the packages after their distribution
+        run: |
+          cd packages
+          for f in *.${{ matrix.kind }}; do mv "$f" "${f%.${{ matrix.kind }}}_${{ matrix.suffix }}.${{ matrix.kind }}"; done
+          ls -l
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.suffix }}
+          path: packages/
+
+  publish:
+    needs: packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Attach the packages to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -l dist
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber

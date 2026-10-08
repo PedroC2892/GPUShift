@@ -40,3 +40,30 @@ jobs:
           ctest --test-dir build-release --output-on-failure
       - name: Install into a staging directory
         run: DESTDIR="$PWD/stage" cmake --install build
+
+  packages:
+    name: packages / ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: debian:trixie
+            kind: deb
+          - image: ubuntu:24.04
+            kind: deb
+          - image: fedora:latest
+            kind: rpm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sh .github/scripts/install-deps.sh
+      - name: Build, install, run and remove the packages
+        run: sh .github/scripts/package.sh ${{ matrix.kind }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.kind }}-${{ strategy.job-index }}
+          path: packages/

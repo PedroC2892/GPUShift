@@ -20,13 +20,18 @@ int main(void)
 	CHECK(strstr(modprobe, "blacklist nvidia\nalias nvidia off\n") != NULL);
 	CHECK(strstr(modprobe, "blacklist nouveau\n") != NULL);
 	CHECK(strstr(modprobe, "i915") == NULL);
-	CHECK(strstr(udev, "KERNEL==\"0000:01:00.*\", ATTR{vendor}==\"0x10de\"") != NULL);
-	CHECK(strstr(udev, "ATTR{power/control}=\"auto\", ATTR{remove}=\"1\"") != NULL);
+	/* C1: one rule per function, exact address and vendor:device, never a glob. */
+	CHECK(strstr(udev, "KERNEL==\"0000:01:00.0\", ATTR{vendor}==\"0x10de\", ATTR{device}==\"0x25a2\", "
+		    "ATTR{power/control}=\"auto\", ATTR{remove}=\"1\"") != NULL);
+	CHECK(strstr(udev, "KERNEL==\"0000:01:00.1\", ATTR{vendor}==\"0x10de\", ATTR{device}==\"0x2291\", "
+		    "ATTR{power/control}=\"auto\", ATTR{remove}=\"1\"") != NULL);
+	CHECK(strchr(udev, '*') == NULL);
 
 	CHECK(build("intel-nvidia", GS_MODE_HYBRID) == 0);
 	CHECK(strstr(modprobe, "options nvidia-drm modeset=1\n") != NULL);
 	CHECK(strstr(modprobe, "options nvidia NVreg_DynamicPowerManagement=0x02\n") != NULL);
-	CHECK(strstr(udev, "ACTION==\"bind\", SUBSYSTEM==\"pci\", KERNEL==\"0000:01:00.0\"") != NULL);
+	CHECK(strstr(udev, "ACTION==\"bind\", SUBSYSTEM==\"pci\", KERNEL==\"0000:01:00.0\", "
+		    "ATTR{vendor}==\"0x10de\", ATTR{device}==\"0x25a2\"") != NULL);
 
 	CHECK(build("asus-mux", GS_MODE_DEDICATED) == 0);
 	CHECK(strstr(modprobe, "options nvidia-drm modeset=1\n") != NULL);
@@ -37,7 +42,10 @@ int main(void)
 	CHECK(build("amdapu-amd", GS_MODE_INTEGRATED) == 0);
 	CHECK(strstr(modprobe, "amdgpu") == NULL);
 	CHECK(strstr(modprobe, "blacklist radeon\n") != NULL);
-	CHECK(strstr(udev, "KERNEL==\"0000:03:00.*\", ATTR{vendor}==\"0x1002\"") != NULL);
+	/* Same vendor as the APU: only the exact dGPU functions may match, never the APU's. */
+	CHECK(strstr(udev, "KERNEL==\"0000:03:00.0\", ATTR{vendor}==\"0x1002\", ATTR{device}==\"0x7480\"") != NULL);
+	CHECK(strstr(udev, "KERNEL==\"0000:03:00.1\", ATTR{vendor}==\"0x1002\", ATTR{device}==\"0xab30\"") != NULL);
+	CHECK(strstr(udev, "c4:00") == NULL && strchr(udev, '*') == NULL);
 	CHECK(build("amdapu-amd", GS_MODE_HYBRID) == 0);
 	CHECK(modprobe[0] == '\0' && udev[0] == '\0');
 

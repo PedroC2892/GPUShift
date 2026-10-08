@@ -274,6 +274,8 @@ gs_status gs_op_apply(gs_system *sys, gs_mode mode)
 	gs_strlcpy(state.dgpu, dgpu->address, sizeof(state.dgpu));
 	state.dgpu_vendor = dgpu->vendor_id;
 	state.dgpu_device = dgpu->device_id;
+	if (gs_dgpu_functions(sys, state.dgpu_functions, sizeof(state.dgpu_functions)) < 0)
+		return GS_ERR_GENERIC;
 	if (mux && !sys->has_state) {
 		gs_strlcpy(state.mux_backend, mux->name, sizeof(state.mux_backend));
 		gs_strlcpy(state.mux_orig, gs_mode_name(mux_prev), sizeof(state.mux_orig));

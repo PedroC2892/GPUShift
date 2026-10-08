@@ -123,6 +123,17 @@ static void test_state_and_pending(void)
 	CHECK(gs_pending_mode(sys) == GS_MODE_INTEGRATED);
 	gs_system_free(sys);
 
+	/* C1: another device now at the recorded address is not the managed dGPU. */
+	write_file(root, "/var/lib/gpushift/state",
+		   "mode=integrated\ndgpu=0000:00:02.0\ndgpu_vendor=10de\ndgpu_device=25a2\n"
+		   "dgpu_functions=0000:00:02.0=10de:25a2\n");
+	sys = load_fixture("single-intel");
+	CHECK(gs_gpu_count(sys) == 2);
+	gs_system_free(sys);
+	write_file(root, "/var/lib/gpushift/state",
+		   "version=1\nmode=integrated\ndgpu=0000:01:00.0\ndgpu_vendor=10de\n"
+		   "dgpu_device=25a2\nmux_backend=\nmux_orig=\n");
+
 	/* A dGPU that is still present is not duplicated. */
 	sys = load_fixture("intel-nvidia");
 	CHECK(gs_gpu_count(sys) == 2 && !gs_gpu_removed(gs_gpu_at(sys, 1)));

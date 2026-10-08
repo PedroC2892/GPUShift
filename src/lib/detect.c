@@ -206,10 +206,13 @@ gs_system *gs_detect(void)
 	if (d)
 		closedir(d);
 	gs_load_state(sys);
-	/* A dGPU removed by Integrated mode is still managed, so keep showing it. */
+	/* A dGPU removed by Integrated mode is still managed, so keep showing it. Another
+	 * device at the same address (renumbered bus, new card) is not the managed dGPU. */
 	bool present = !sys->state.dgpu[0];
 	for (size_t i = 0; i < sys->gpu_count && !present; i++)
-		present = strcmp(sys->gpus[i].address, sys->state.dgpu) == 0;
+		present = strcmp(sys->gpus[i].address, sys->state.dgpu) == 0 &&
+			  sys->gpus[i].vendor_id == sys->state.dgpu_vendor &&
+			  sys->gpus[i].device_id == sys->state.dgpu_device;
 	if (!present && sys->gpu_count < GS_MAX_GPUS) {
 		struct gs_gpu *g = &sys->gpus[sys->gpu_count++];
 		gs_strlcpy(g->address, sys->state.dgpu, sizeof(g->address));

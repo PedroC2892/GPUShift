@@ -61,7 +61,9 @@ new_case "integrated, hybrid, reset (update-initramfs)" intel-nvidia
 fake_tool /usr/sbin/update-initramfs 0
 run apply integrated; expect_rc 0
 has $MODPROBE "blacklist nvidia"
-has $UDEV 'KERNEL=="0000:01:00.\*"'
+has $UDEV 'KERNEL=="0000:01:00.0", ATTR{vendor}=="0x10de", ATTR{device}=="0x25a2"'
+has $UDEV 'KERNEL=="0000:01:00.1", ATTR{vendor}=="0x10de", ATTR{device}=="0x2291"'
+has $STATE "dgpu_functions=0000:01:00.0=10de:25a2 0000:01:00.1=10de:2291"
 has $STATE "mode=integrated"
 has $STATE "dgpu=0000:01:00.0"
 has $PENDING "from=hybrid"
@@ -143,7 +145,10 @@ echo "$out" | grep -q "removed from the PCI bus by GPUShift" || fail "removed dG
 echo "$out" | grep -q "\* integrated" || fail "current mode is not integrated"
 run apply dedicated; expect_rc 5
 run apply hybrid; expect_rc 0
-has $UDEV 'KERNEL=="0000:01:00.0"'
+has $UDEV 'KERNEL=="0000:01:00.0", ATTR{vendor}=="0x10de", ATTR{device}=="0x25a2"'
+run apply integrated; expect_rc 0   # dGPU absent: the functions come from the state
+has $UDEV 'KERNEL=="0000:01:00.1", ATTR{vendor}=="0x10de", ATTR{device}=="0x2291"'
+run apply hybrid; expect_rc 0
 has $PENDING "from=integrated"
 
 new_case "boot counter: revert on the third unconfirmed boot" intel-nvidia

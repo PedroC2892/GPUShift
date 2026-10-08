@@ -34,6 +34,7 @@ struct gs_state {
 	gs_mode mode;
 	char dgpu[32];               /* PCI address of the managed dGPU */
 	unsigned dgpu_vendor, dgpu_device;
+	char dgpu_functions[256];    /* "addr=vvvv:dddd ..." for every function of its slot */
 	char mux_backend[32];
 	char mux_orig[16];           /* MUX value before GPUShift changed it */
 	/* Confirmation of the last change (see gpushift-boot-check). */
@@ -116,6 +117,8 @@ void gs_load_state(struct gs_system *sys);
 int gs_config_build(const gs_system *sys, gs_mode mode,
 		    char *modprobe, size_t modprobe_len, char *udev, size_t udev_len);
 bool gs_valid_pci_address(const char *address);
+/* PCI functions of the dGPU slot as "addr=vvvv:dddd ..." (from sysfs, or the state if removed). */
+int gs_dgpu_functions(const gs_system *sys, char *buf, size_t n);
 
 /* Initramfs generators (initramfs.c). */
 struct gs_initramfs_backend {

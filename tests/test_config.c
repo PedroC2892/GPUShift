@@ -40,8 +40,8 @@ int main(void)
 
 	/* AMD APU + AMD dGPU: amdgpu drives the panel and must never be blacklisted. */
 	CHECK(build("amdapu-amd", GS_MODE_INTEGRATED) == 0);
-	CHECK(strstr(modprobe, "amdgpu") == NULL);
-	CHECK(strstr(modprobe, "blacklist radeon\n") != NULL);
+	/* B3: same vendor (amdgpu/radeon, i915/xe): no module is blacklisted, only udev removes. */
+	CHECK(strstr(modprobe, "blacklist") == NULL);
 	/* Same vendor as the APU: only the exact dGPU functions may match, never the APU's. */
 	CHECK(strstr(udev, "KERNEL==\"0000:03:00.0\", ATTR{vendor}==\"0x1002\", ATTR{device}==\"0x7480\"") != NULL);
 	CHECK(strstr(udev, "KERNEL==\"0000:03:00.1\", ATTR{vendor}==\"0x1002\", ATTR{device}==\"0xab30\"") != NULL);

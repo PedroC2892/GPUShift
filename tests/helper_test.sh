@@ -114,7 +114,8 @@ for tool in dracut:/usr/bin/dracut:"--force --regenerate-all" \
 	run apply integrated; expect_rc 0
 	[ -f "$ROOT$log.log" ] || fail "$log was not run"
 	[ "$(cat "$ROOT$log.log" 2>/dev/null)" = "$args" ] || fail "wrong arguments for $tname"
-	has $MODPROBE "blacklist radeon"
+	absent $MODPROBE   # B3: same vendor as the APU, nothing blacklisted
+	has $UDEV 'KERNEL=="0000:03:00.0", ATTR{vendor}=="0x1002", ATTR{device}=="0x7480"'
 done
 
 new_case "update-initramfs wins over dracut" intel-nouveau

@@ -138,8 +138,15 @@ int gs_config_build(const gs_system *sys, gs_mode mode,
 
 	switch (mode) {
 	case GS_MODE_INTEGRATED:
-		add(&m, HEADER "# Integrated mode: keep the dedicated GPU drivers from loading.\n");
-		add_blacklist(&m, igpu, dgpu);
+		/*
+		 * Same vendor (AMD APU + AMD dGPU, Intel + Intel Arc): its drivers may drive
+		 * the iGPU, now or after a kernel update (i915 -> xe), so none is blacklisted
+		 * and the exact udev rule alone removes the dGPU.
+		 */
+		if (igpu->vendor_id != dgpu->vendor_id) {
+			add(&m, HEADER "# Integrated mode: keep the dedicated GPU drivers from loading.\n");
+			add_blacklist(&m, igpu, dgpu);
+		}
 		add(&u, HEADER "# Integrated mode: power down every function of the dedicated GPU and\n"
 			"# remove it from the bus. Each line matches one exact address and\n"
 			"# vendor:device, so a renumbered bus or new hardware never matches.\n");

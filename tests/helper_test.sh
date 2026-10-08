@@ -366,6 +366,14 @@ run apply integrated; expect_rc 0
 [ "$(cat "$ROOT/boot/initrd.img-6.12.0")" = 070701new ] || fail "image not regenerated"
 [ ! -e "$ROOT/var/lib/gpushift/initramfs-backup" ] || fail "image backup left behind"
 
+new_case "N2: stale image backups from an interrupted run are cleaned up" intel-nvidia
+images
+mkdir -p "$ROOT/var/lib/gpushift/initramfs-backup"
+echo stale > "$ROOT/var/lib/gpushift/initramfs-backup/7"
+fake_gen 'printf 070701new > "$R/boot/initrd.img-6.12.0"'
+run apply integrated; expect_rc 0
+absent /var/lib/gpushift/initramfs-backup
+
 new_case "C3: empty image with exit 0 is rolled back" intel-nvidia
 images
 fake_gen ': > "$R/boot/initrd.img-6.12.0"'

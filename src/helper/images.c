@@ -217,15 +217,22 @@ static void backup_path_of(char *buf, size_t n, size_t i)
 	snprintf(buf, n, "%s/%zu", dir, i);
 }
 
-static void drop_backups(size_t count)
+/* Removes every backup, including ones left by an interrupted run. */
+static void drop_backups(void)
 {
-	char path[PATH_MAX + 32];
-	for (size_t i = 0; i < count; i++) {
-		backup_path_of(path, sizeof(path), i);
-		unlink(path);
-	}
-	if (gs_wpath(path, sizeof(path), BACKUP_DIR) == 0)
-		rmdir(path);
+	char dir[PATH_MAX], path[PATH_MAX * 2];
+	if (gs_wpath(dir, sizeof(dir), BACKUP_DIR) < 0)
+		return;
+	DIR *d = opendir(dir);
+	struct dirent *e;
+	while (d && (e = readdir(d)))
+		if (e->d_name[0] != '.') {
+			snprintf(path, sizeof(path), "%s/%s", dir, e->d_name);
+			unlink(path);
+		}
+	if (d)
+		closedir(d);
+	rmdir(dir);
 }
 
 gs_status gs_initramfs_preflight(void)
@@ -264,13 +271,14 @@ gs_status gs_regenerate_initramfs(void)
 		return st;
 
 	size_t n = collect(before);
+	drop_backups(); /* copies left by an interrupted run belong to no known image */
 	if (gs_wpath(path, sizeof(path), BACKUP_DIR) < 0 || (mkdir(path, 0700) < 0 && errno != EEXIST))
 		return GS_ERR_IO;
 	for (size_t i = 0; i < n; i++) {
 		backup_path_of(path, sizeof(path), i);
 		if (copy_file(before[i].path, path, 0600) < 0) {
 			fprintf(stderr, "gpushift: could not back up %s\n", before[i].path);
-			drop_backups(n);
+			drop_backups();
 			return GS_ERR_IO;
 		}
 	}
@@ -294,7 +302,7 @@ gs_status gs_regenerate_initramfs(void)
 	for (size_t j = 0; ok && j < m; j++)
 		ok = image_ok(after[j].path, lst, b->lister_arg);
 	if (ok) {
-		drop_backups(n);
+		drop_backups();
 		return GS_OK;
 	}
 
@@ -316,6 +324,6 @@ gs_status gs_regenerate_initramfs(void)
 		}
 	}
 	if (restored)
-		drop_backups(n);
+		drop_backups();
 	return GS_ERR_INITRAMFS_FAILED;
 }

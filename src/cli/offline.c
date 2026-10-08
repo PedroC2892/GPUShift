@@ -8,6 +8,7 @@
 
 #include "../lib/internal.h"
 
+#include <dirent.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -99,13 +100,25 @@ int gs_reset_offline(const char *root)
 		GS_BACKUP_DIR "/gpushift.conf", GS_BACKUP_DIR "/50-gpushift.rules",
 		GS_STATE_FILE, GS_LOG_FILE, GS_RECOVERY_FILE,
 	};
-	static const char *const dirs[] = { GS_PREVIOUS_DIR, GS_BACKUP_DIR, "/var/lib/gpushift" };
-	char path[PATH_MAX];
+	static const char *const dirs[] = { GS_PREVIOUS_DIR, GS_BACKUP_DIR,
+					    "/var/lib/gpushift/initramfs-backup", "/var/lib/gpushift" };
+	char path[PATH_MAX], img[PATH_MAX * 2];
 	for (size_t i = 0; i < sizeof(files) / sizeof(files[0]); i++) {
 		snprintf(path, sizeof(path), "%s%s", root, files[i]);
 		unlink(path);
 	}
-	for (size_t i = 0; i < 3; i++) {
+	/* Initramfs copies of an interrupted regeneration: the chroot step rebuilds the images. */
+	snprintf(path, sizeof(path), "%s/var/lib/gpushift/initramfs-backup", root);
+	DIR *d = opendir(path);
+	struct dirent *e;
+	while (d && (e = readdir(d)))
+		if (e->d_name[0] != '.') {
+			snprintf(img, sizeof(img), "%s/%s", path, e->d_name);
+			unlink(img);
+		}
+	if (d)
+		closedir(d);
+	for (size_t i = 0; i < 4; i++) {
 		snprintf(path, sizeof(path), "%s%s", root, dirs[i]);
 		rmdir(path);
 	}

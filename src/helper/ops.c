@@ -166,8 +166,14 @@ static int take_snapshot_at(struct snapshot *s, path_fn where)
 	for (size_t i = 0; i < NTARGETS; i++) {
 		if (where(path, targets[i]) < 0)
 			return -1;
-		s->exists[i] = gs_exists(path);
+		struct stat st;
+		s->exists[i] = stat(path, &st) == 0;
 		s->data[i][0] = '\0';
+		/* A file that does not fit would be backed up truncated: refuse instead. */
+		if (s->exists[i] && st.st_size >= CONTENT_MAX) {
+			fprintf(stderr, "gpushift: %s is too large to back up safely; move it away first\n", path);
+			return -1;
+		}
 		if (s->exists[i] && gs_read_file(path, s->data[i], CONTENT_MAX) < 0)
 			return -1;
 	}

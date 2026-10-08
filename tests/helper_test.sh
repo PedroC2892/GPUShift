@@ -95,6 +95,15 @@ run reset; expect_rc 0
 has $MODPROBE "options original=1"
 absent /var/lib/gpushift/backup
 
+new_case "B1: a pre-existing file too large to back up is never truncated" intel-nvidia
+fake_tool /usr/sbin/update-initramfs 0
+mkdir -p "$ROOT/etc/modprobe.d"
+awk 'BEGIN { for (i = 0; i < 300; i++) printf "options dummy%03d value=1\n", i }' > "$ROOT$MODPROBE"
+cp "$ROOT$MODPROBE" "$WORK/big.conf"
+run apply integrated; expect_rc 8
+cmp -s "$ROOT$MODPROBE" "$WORK/big.conf" || fail "user file changed"
+absent $STATE; absent /var/lib/gpushift/backup/gpushift.conf
+
 for tool in dracut:/usr/bin/dracut:"--force --regenerate-all" \
 	    mkinitcpio:/usr/bin/mkinitcpio:"-P" \
 	    booster:/usr/lib/booster/regenerate_images:""; do

@@ -246,6 +246,21 @@ absent $MODPROBE
 boot; boot
 [ "$(reboots)" -eq 1 ] || fail "rebooted again after the revert"
 
+new_case "N1: a revert that keeps failing is forced on the fifth boot" asus-mux
+fake_tool /usr/sbin/update-initramfs 0
+run apply dedicated; expect_rc 0
+fake_tool /usr/sbin/update-initramfs 1   # e.g. /boot stays full
+boot; boot; boot; expect_rc 9
+boot; expect_rc 9
+[ "$(reboots)" -eq 0 ] || fail "rebooted after a failed revert"
+boot; expect_rc 0
+grep -q "the initramfs was not regenerated" "$WORK/stderr" || fail "missing initramfs warning"
+has $STATE "^mode=hybrid"
+has $STATE "pending=0"
+absent $MODPROBE
+[ "$(cat "$SYS/sys/devices/platform/asus-nb-wmi/gpu_mux_mode")" = 1 ] || fail "MUX not reverted"
+[ "$(reboots)" -eq 1 ] || fail "expected one reboot"
+
 new_case "gpushift.reset=1 on the kernel command line" intel-nvidia
 fake_tool /usr/sbin/update-initramfs 0
 echo "BOOT_IMAGE=/vmlinuz root=UUID=1234 ro quiet gpushift.reset=10" > "$SYS/proc/cmdline"

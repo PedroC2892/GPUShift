@@ -22,7 +22,9 @@ text console shows "gpushift: restoring the previous GPU mode, do not power
 off"; wait for it to finish (it can take a few minutes).
 
 If the revert itself fails (for example `/boot` is full), nothing is changed
-and it is tried again on every following boot; it never reboots in a loop.
+and it is tried again on every following boot; from the fifth unconfirmed boot
+on, the previous configuration and MUX setting are restored even if the
+initramfs cannot be rebuilt. It never reboots in a loop.
 Every regeneration keeps a copy of the existing initramfs images and puts them
 back if the new ones are missing, empty or unreadable.
 

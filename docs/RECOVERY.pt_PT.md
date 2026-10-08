@@ -23,8 +23,9 @@ Enquanto trabalha, a consola de texto mostra "gpushift: restoring the previous
 GPU mode, do not power off"; espere que termine (pode demorar alguns minutos).
 
 Se a própria reversão falhar (por exemplo, com `/boot` cheio), nada é
-alterado e volta a ser tentada em cada arranque seguinte; nunca reinicia em
-ciclo. Cada regeneração guarda uma cópia das imagens de initramfs existentes
+alterado e volta a ser tentada em cada arranque seguinte; a partir do quinto
+arranque sem confirmação, a configuração e o MUX anteriores são repostos mesmo
+que o initramfs não possa ser reconstruído. Nunca reinicia em ciclo. Cada regeneração guarda uma cópia das imagens de initramfs existentes
 e repõe-nas se as novas faltarem, estiverem vazias ou ilegíveis.
 
 O motivo fica registado em `/var/lib/gpushift/log` e no journal

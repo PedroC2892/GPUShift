@@ -410,7 +410,7 @@ gs_status gs_op_confirm(gs_system *sys)
 }
 
 /* Restores previous_mode from GS_PREVIOUS_DIR. The caller checks the state is pending. */
-static gs_status revert(gs_system *sys, const char *reason)
+static gs_status revert(gs_system *sys, const char *reason, bool force)
 {
 	static struct snapshot snap;
 	char path[PATH_MAX], prev[PATH_MAX], data[CONTENT_MAX];
@@ -423,7 +423,7 @@ static gs_status revert(gs_system *sys, const char *reason)
 			gs_op_log("could not move the firmware MUX to the integrated GPU");
 		return gs_op_reset(sys, true);
 	}
-	if (!gs_sys_initramfs_tool(sys))
+	if (!force && !gs_sys_initramfs_tool(sys))
 		return GS_ERR_NO_INITRAMFS;
 	if (take_snapshot(&snap) < 0)
 		return GS_ERR_IO;
@@ -431,8 +431,11 @@ static gs_status revert(gs_system *sys, const char *reason)
 	gs_mode running = gs_current_mode(sys), target = sys->state.previous_mode;
 	const struct gs_mux_backend *mux = sys->mux;
 	gs_mode mux_prev = mux ? mux->get(mux) : GS_MODE_NONE;
-	if (mux && target != GS_MODE_NONE && mux->set(mux, target) < 0)
-		return GS_ERR_MUX;
+	if (mux && target != GS_MODE_NONE && mux->set(mux, target) < 0) {
+		if (!force)
+			return GS_ERR_MUX;
+		gs_op_log("could not restore the firmware MUX; switch it in the firmware setup");
+	}
 
 	gs_status st = GS_OK;
 	for (size_t i = 0; i < NTARGETS && st == GS_OK; i++) {
@@ -446,6 +449,11 @@ static gs_status revert(gs_system *sys, const char *reason)
 	}
 	if (st == GS_OK)
 		st = gs_regenerate_initramfs();
+	/* Same reasoning as the emergency reset: the previous files and MUX matter most. */
+	if (force && (st == GS_ERR_NO_INITRAMFS || st == GS_ERR_INITRAMFS_FAILED || st == GS_ERR_NO_SPACE)) {
+		gs_op_log("the initramfs was not regenerated; regenerate it with your distribution's tool");
+		st = GS_OK;
+	}
 	if (st != GS_OK) {
 		restore_snapshot(&snap);
 		if (mux)
@@ -467,7 +475,7 @@ gs_status gs_op_revert(gs_system *sys)
 {
 	if (!gs_awaiting_confirmation(sys))
 		return GS_ERR_NOT_AWAITING;
-	return revert(sys, "requested from the user session");
+	return revert(sys, "requested from the user session", false);
 }
 
 static bool cmdline_has(const char *token)
@@ -535,7 +543,8 @@ gs_status gs_op_boot_check(gs_system *sys, int (*reboot_fn)(void))
 	state->auto_reboot = true;
 	msg("restoring the previous GPU mode, do not power off; this can take a few minutes");
 	snprintf(line, sizeof(line), "no confirmation after %d boots", state->boot_attempts);
-	gs_status st = revert(sys, line);
+	/* If reverting keeps failing (e.g. /boot stays full), give up on the new initramfs. */
+	gs_status st = revert(sys, line, state->boot_attempts >= GS_MAX_BOOT_ATTEMPTS + 2);
 	if (st != GS_OK) {
 		gs_op_log(gs_strerror(st));
 		gs_op_log("revert failed; it is tried again on the next boot");

@@ -34,7 +34,7 @@ static int do_reboot(void)
 			continue;
 		/* --no-block: this oneshot unit must finish for the shutdown to proceed. */
 		char *argv[] = { (char *)paths[i], "--no-block", "reboot", NULL };
-		return gs_spawn(paths[i], argv, envp) == 0 ? 0 : -1;
+		return gs_spawn(paths[i], argv, envp, false) == 0 ? 0 : -1;
 	}
 	return -1;
 }

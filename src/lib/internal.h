@@ -126,12 +126,15 @@ struct gs_initramfs_backend {
 	const char *binary;       /* looked up in the fixed system directories */
 	const char *runner;       /* optional absolute program to run instead */
 	const char *args[4];      /* arguments after argv[0] */
+	const char *lister;       /* program that lists an image, to validate it */
+	const char *lister_arg;   /* optional argument before the image path */
 	int (*run)(const struct gs_initramfs_backend *b, const char *path);
 };
 const struct gs_initramfs_backend *gs_initramfs_find(char *path, size_t n);
+int gs_initramfs_lister(const struct gs_initramfs_backend *b, char *path, size_t n);
 
 /* Runs an absolute program without a shell; returns its exit status or -1. */
-int gs_spawn(const char *path, char *const argv[], char *const envp[]);
+int gs_spawn(const char *path, char *const argv[], char *const envp[], bool quiet);
 
 /* The single integrated and dedicated GPU of a switchable system, or NULL. */
 const struct gs_gpu *gs_igpu(const gs_system *sys);

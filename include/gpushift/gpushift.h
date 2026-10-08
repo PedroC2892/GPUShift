@@ -35,6 +35,7 @@ typedef enum {
 	GS_ERR_PERMISSION = 11,      /* the helper was not run as root */
 	GS_ERR_AUTH = 12,            /* polkit authentication denied or cancelled */
 	GS_ERR_NOT_AWAITING = 13,    /* no unconfirmed change after a reboot */
+	GS_ERR_NO_SPACE = 14,        /* not enough space to back up and rebuild the initramfs */
 } gs_status;
 
 typedef enum {

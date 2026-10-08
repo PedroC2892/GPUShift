@@ -193,11 +193,12 @@ Exit codes (shared by `gpushift` and `gpushift-helper`):
 | 6  | A conflicting GPU switching tool is active |
 | 7  | No supported initramfs generator found |
 | 8  | Could not write the configuration |
-| 9  | Initramfs generation failed; changes were rolled back |
+| 9  | Initramfs generation or validation failed; images and configuration were restored |
 | 10 | Could not change the firmware MUX |
 | 11 | Not root, and `pkexec` not found |
 | 12 | polkit authentication cancelled or denied |
 | 13 | No unconfirmed mode change since the last reboot (`confirm`, revert) |
+| 14 | Not enough free space to back up and rebuild the initramfs; nothing changed |
 
 ## What each mode changes
 
@@ -300,6 +301,29 @@ safest, most portable and simplest option.
   `/usr/lib/booster/regenerate_images` script). Only `/usr/sbin`, `/usr/bin`,
   `/sbin` and `/bin` are searched. If none is found nothing is written. If the
   generator fails, the previous files and MUX value are restored.
+- **Initramfs safety net.** GPUShift does not trust the generators to leave a
+  bootable system behind. Before regenerating it checks the free space next to
+  each image (1.5 times the image plus 16 MiB) and in `/var/lib` (all images
+  plus 16 MiB), copies every image (`/boot/initrd.img-*`, `initrd-*`,
+  `initramfs-*`, `booster-*` and `<ESP>/<entry>/<version>/initrd`) to
+  `/var/lib/gpushift/initramfs-backup/`, runs the generator and then checks
+  that every image still exists, is not empty, starts with a cpio or
+  compressor signature and can be listed by the tool's own lister
+  (`lsinitramfs`, `lsinitcpio`, `lsinitrd`, `booster ls`). On any failure the
+  images are put back (new ones are deleted) and the `/etc` files, MUX and
+  state are restored, leaving the system exactly as it was. What each
+  generator does on its own, read from its source:
+
+  | Generator | Version read | Writes the image | All kernels |
+  |-----------|--------------|------------------|-------------|
+  | mkinitcpio | git `483edb7` (Oct 2026) | to `<image>.tmp` + `mv` only if free space is at least 1.25x the old image; otherwise truncates and writes **in place** | `-P` stops at the first failing preset |
+  | dracut | dracut-ng git `16c0ead` (Oct 2026) | to `<image>.tmp` + `mv` (`dracut.sh` "protect existing output file") | `--regenerate-all` stops at the first failing kernel |
+  | booster | git `598d8b5` (Sep 2026) | `renameio` temporary file + atomic replace | `regenerate_images` builds all kernels in parallel |
+  | update-initramfs | initramfs-tools 0.142ubuntu25.8 (Ubuntu 24.04; Debian's mirror was not reachable from the build environment, the code path is the same upstream) | `mkinitramfs` to `<image>.new` + `mv` | `-k all` stops at the first failing kernel |
+
+  So a failure can leave some kernels with new images and others with old
+  ones, and mkinitcpio can leave a truncated image on a nearly full `/boot`:
+  both are covered by the backup and restore above.
 - **Paths.** Runtime files go to the administrator directories
   (`/etc/modprobe.d`, `/etc/udev/rules.d`), which override vendor
   directories; `pkg-config` only reports vendor directories (`udevdir`), so it

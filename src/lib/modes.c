@@ -189,11 +189,12 @@ const char *gs_strerror(gs_status status)
 	case GS_ERR_CONFLICT: return "Another GPU switching tool is active";
 	case GS_ERR_NO_INITRAMFS: return "No supported initramfs generator was found";
 	case GS_ERR_IO: return "Could not write the system configuration";
-	case GS_ERR_INITRAMFS_FAILED: return "Regenerating the initramfs failed; changes were rolled back";
+	case GS_ERR_INITRAMFS_FAILED: return "Regenerating or validating the initramfs failed; images and configuration were restored";
 	case GS_ERR_MUX: return "Could not change the firmware GPU MUX";
 	case GS_ERR_PERMISSION: return "Administrator privileges are required";
 	case GS_ERR_AUTH: return "Authentication was cancelled or denied";
 	case GS_ERR_NOT_AWAITING: return "There is no unconfirmed mode change since the last reboot";
+	case GS_ERR_NO_SPACE: return "Not enough free space to back up and rebuild the initramfs";
 	}
 	return "Unknown error";
 }

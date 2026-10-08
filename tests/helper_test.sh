@@ -271,6 +271,77 @@ cmp -s "$ROOT$STATE" "$WORK/state.before" || fail "state not restored after a fa
 has $MODPROBE "blacklist nvidia"
 [ ! -e "$ROOT/var/lib/gpushift/backup/previous/gpushift.conf" ] || fail "previous files changed by a failed apply"
 
+# fake_gen <body>: update-initramfs that runs <body> with $R as the fake root.
+fake_gen() {
+	mkdir -p "$ROOT/usr/sbin"
+	printf '#!/bin/sh\nR=$(cd "$(dirname "$0")/../.." && pwd)\necho "$*" > "$0.log"\n%s\n' "$1" \
+		> "$ROOT/usr/sbin/update-initramfs"
+	chmod 755 "$ROOT/usr/sbin/update-initramfs"
+}
+# Valid-looking images: an uncompressed cpio starts with "070701".
+images() {
+	mkdir -p "$ROOT/boot/efi/abc/6.12.0"
+	printf '070701old-6.12' > "$ROOT/boot/initrd.img-6.12.0"
+	printf '070701old-esp' > "$ROOT/boot/efi/abc/6.12.0/initrd"
+	cp "$ROOT/boot/initrd.img-6.12.0" "$WORK/img.orig"
+	cp "$ROOT/boot/efi/abc/6.12.0/initrd" "$WORK/esp.orig"
+}
+images_restored() {
+	cmp -s "$ROOT/boot/initrd.img-6.12.0" "$WORK/img.orig" || fail "initramfs image not restored"
+	cmp -s "$ROOT/boot/efi/abc/6.12.0/initrd" "$WORK/esp.orig" || fail "ESP initrd not restored"
+	[ ! -e "$ROOT/var/lib/gpushift/initramfs-backup" ] || fail "image backup left behind"
+	absent $MODPROBE; absent $UDEV; absent $STATE
+}
+
+new_case "C3: regenerated images are validated" intel-nvidia
+images
+fake_gen 'printf 070701new > "$R/boot/initrd.img-6.12.0"'
+run apply integrated; expect_rc 0
+[ "$(cat "$ROOT/boot/initrd.img-6.12.0")" = 070701new ] || fail "image not regenerated"
+[ ! -e "$ROOT/var/lib/gpushift/initramfs-backup" ] || fail "image backup left behind"
+
+new_case "C3: empty image with exit 0 is rolled back" intel-nvidia
+images
+fake_gen ': > "$R/boot/initrd.img-6.12.0"'
+run apply integrated; expect_rc 9
+images_restored
+
+new_case "C3: image truncated in place by a failing generator" intel-nvidia
+images
+fake_gen ': > "$R/boot/initrd.img-6.12.0"; printf 0707 > "$R/boot/initrd.img-6.12.0"; exit 1'
+run apply integrated; expect_rc 9
+images_restored
+
+new_case "C3: corrupted ESP image is rolled back" intel-nvidia
+images
+fake_gen 'printf garbage > "$R/boot/efi/abc/6.12.0/initrd"'
+run apply integrated; expect_rc 9
+images_restored
+
+new_case "C3: lister rejects the image" intel-nvidia
+images
+fake_gen 'printf 070701new > "$R/boot/initrd.img-6.12.0"'
+fake_tool /usr/bin/lsinitramfs 1
+run apply integrated; expect_rc 9
+images_restored
+has /usr/bin/lsinitramfs.log "initrd.img-6.12.0"
+
+new_case "C3: images created by a failed run are removed" intel-nvidia
+images
+fake_gen 'printf 070701 > "$R/boot/initrd.img-6.13.0"; exit 1'
+run apply integrated; expect_rc 9
+images_restored
+absent /boot/initrd.img-6.13.0
+
+new_case "C3: not enough space for the images" intel-nvidia
+images
+fake_gen 'printf 070701new > "$R/boot/initrd.img-6.12.0"'
+export GPUSHIFT_TEST_FREE_BYTES=1024
+run apply integrated; expect_rc 14
+unset GPUSHIFT_TEST_FREE_BYTES
+[ ! -e "$ROOT/usr/sbin/update-initramfs.log" ] || fail "generator ran without enough space"
+images_restored
+
 new_case "refusals" single-intel
 fake_tool /usr/sbin/update-initramfs 0
 run apply hybrid; expect_rc 3

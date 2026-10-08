@@ -295,10 +295,6 @@ A alteração tem efeito após reiniciar.</translation>
         <translation>Não foi possível escrever a configuração do sistema.</translation>
     </message>
     <message>
-        <source>Regenerating the initramfs failed. The previous configuration was restored.</source>
-        <translation>A regeneração do initramfs falhou. A configuração anterior foi reposta.</translation>
-    </message>
-    <message>
         <source>Could not change the firmware GPU MUX.</source>
         <translation>Não foi possível alterar o MUX de GPU do firmware.</translation>
     </message>
@@ -372,6 +368,14 @@ Guia completo: %2</translation>
     <message>
         <source>No GPU was detected.</source>
         <translation>Não foi detetada nenhuma GPU.</translation>
+    </message>
+    <message>
+        <source>Regenerating or validating the initramfs failed. The previous initramfs images and configuration were restored.</source>
+        <translation>A regeneração ou a validação do initramfs falhou. As imagens de initramfs e a configuração anteriores foram repostas.</translation>
+    </message>
+    <message>
+        <source>Not enough free space in /boot or /var/lib to back up and rebuild the initramfs. Nothing was changed.</source>
+        <translation>Não há espaço livre suficiente em /boot ou /var/lib para guardar e reconstruir o initramfs. Nada foi alterado.</translation>
     </message>
 </context>
 </TS>

@@ -26,13 +26,13 @@ static gs_status run_helper(const char *cmd, const char *arg)
 		argv[i++] = (char *)arg;
 	argv[i] = NULL;
 
-	int rc = gs_spawn(argv[0], argv, environ);
+	int rc = gs_spawn(argv[0], argv, environ, false);
 	if (rc < 0)
 		return GS_ERR_GENERIC;
 	/* pkexec: 126 = dialog dismissed, 127 = not authorized. */
 	if (via_pkexec && (rc == 126 || rc == 127))
 		return GS_ERR_AUTH;
-	return rc <= GS_ERR_NOT_AWAITING ? (gs_status)rc : GS_ERR_GENERIC;
+	return rc <= GS_ERR_NO_SPACE ? (gs_status)rc : GS_ERR_GENERIC;
 }
 
 gs_status gs_apply_mode(gs_mode mode)

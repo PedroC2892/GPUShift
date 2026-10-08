@@ -210,16 +210,6 @@ static int backup_originals(const struct snapshot *s)
 	return 0;
 }
 
-static int run_initramfs(void)
-{
-	char tool[PATH_MAX];
-	const struct gs_initramfs_backend *b = gs_initramfs_find(tool, sizeof(tool));
-	if (!b)
-		return -1;
-	fprintf(stderr, "gpushift: regenerating the initramfs with %s...\n", b->name);
-	return b->run(b, tool);
-}
-
 static int write_pending(gs_mode from, gs_mode to)
 {
 	char path[PATH_MAX], data[128];
@@ -264,6 +254,8 @@ gs_status gs_op_apply(gs_system *sys, gs_mode mode)
 		return GS_ERR_NO_INITRAMFS;
 	if (gs_config_build(sys, mode, modprobe, sizeof(modprobe), udev, sizeof(udev)) < 0)
 		return GS_ERR_GENERIC;
+	if ((st = gs_initramfs_preflight()) != GS_OK)
+		return st;
 	if (take_snapshot(&snap) < 0 || (!sys->has_state && backup_originals(&snap) < 0))
 		return GS_ERR_IO;
 
@@ -309,8 +301,8 @@ gs_status gs_op_apply(gs_system *sys, gs_mode mode)
 	for (size_t i = 0; i < NTARGETS && st == GS_OK; i++)
 		if (wpath(path, targets[i]) < 0 || put_file(path, contents[i]) < 0)
 			st = GS_ERR_IO;
-	if (st == GS_OK && run_initramfs() < 0)
-		st = GS_ERR_INITRAMFS_FAILED;
+	if (st == GS_OK)
+		st = gs_regenerate_initramfs();
 	if (st != GS_OK) {
 		restore_snapshot(&snap);
 		if (mux)
@@ -357,8 +349,8 @@ gs_status gs_op_reset(gs_system *sys)
 		else if (remove_file(path) < 0)
 			st = GS_ERR_IO;
 	}
-	if (st == GS_OK && run_initramfs() < 0)
-		st = GS_ERR_INITRAMFS_FAILED;
+	if (st == GS_OK)
+		st = gs_regenerate_initramfs();
 	if (st != GS_OK) {
 		restore_snapshot(&snap);
 		if (mux && orig != GS_MODE_NONE)
@@ -424,8 +416,8 @@ static gs_status revert(gs_system *sys, const char *reason)
 		else if (remove_file(path) < 0)
 			st = GS_ERR_IO;
 	}
-	if (st == GS_OK && run_initramfs() < 0)
-		st = GS_ERR_INITRAMFS_FAILED;
+	if (st == GS_OK)
+		st = gs_regenerate_initramfs();
 	if (st != GS_OK) {
 		restore_snapshot(&snap);
 		if (mux)

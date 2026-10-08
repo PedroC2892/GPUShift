@@ -354,7 +354,11 @@ QString MainWindow::statusMessage(gs_status st)
 			  "booster) was found, so modes cannot be changed.");
 	case GS_ERR_IO: return tr("Could not write the system configuration.");
 	case GS_ERR_INITRAMFS_FAILED:
-		return tr("Regenerating the initramfs failed. The previous configuration was restored.");
+		return tr("Regenerating or validating the initramfs failed. The previous initramfs images and "
+			  "configuration were restored.");
+	case GS_ERR_NO_SPACE:
+		return tr("Not enough free space in /boot or /var/lib to back up and rebuild the initramfs. "
+			  "Nothing was changed.");
 	case GS_ERR_MUX: return tr("Could not change the firmware GPU MUX.");
 	case GS_ERR_PERMISSION: return tr("Administrator privileges are required, but pkexec was not found.");
 	case GS_ERR_AUTH: return tr("Authentication was cancelled or denied.");

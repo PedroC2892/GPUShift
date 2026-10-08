@@ -33,6 +33,7 @@ private:
 	void runHelper(const QString &busyText, gs_status (*task)(gs_mode), gs_mode mode);
 
 	static QString modeTitle(gs_mode mode);
+	static QString recoveryText();
 	static QString modeDescription(gs_mode mode);
 	static QString switchMessage(gs_switch sw);
 	static QString statusMessage(gs_status st);

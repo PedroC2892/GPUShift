@@ -318,5 +318,25 @@ A alteração tem efeito após reiniciar.</translation>
         <comment>GPU mode</comment>
         <translation>Nenhum</translation>
     </message>
+    <message>
+        <source>This mode change is not confirmed yet (%1 of %2 boots). It is reverted automatically unless confirmed: run &apos;gpushift confirm&apos; if the display works.</source>
+        <translation>Esta troca de modo ainda não foi confirmada (%1 de %2 arranques). É revertida automaticamente se não for confirmada: execute &apos;gpushift confirm&apos; se o ecrã funcionar.</translation>
+    </message>
+    <message>
+        <source>If the screen stays black after rebooting:
+1. Wait and reboot: after %1 boots without confirmation the previous mode is restored automatically.
+2. Press Ctrl+Alt+F3, log in and run: sudo gpushift reset &amp;&amp; sudo reboot
+3. In the boot menu press &apos;e&apos;, add gpushift.reset=1 to the &apos;linux&apos; line and boot with Ctrl+X or F10.
+Full guide: %2</source>
+        <translation>Se o ecrã ficar preto depois de reiniciar:
+1. Aguarde e reinicie: ao fim de %1 arranques sem confirmação, o modo anterior é reposto automaticamente.
+2. Carregue em Ctrl+Alt+F3, inicie sessão e execute: sudo gpushift reset &amp;&amp; sudo reboot
+3. No menu de arranque carregue em &apos;e&apos;, acrescente gpushift.reset=1 à linha &apos;linux&apos; e arranque com Ctrl+X ou F10.
+Guia completo: %2</translation>
+    </message>
+    <message>
+        <source>There is no unconfirmed mode change since the last reboot.</source>
+        <translation>Não há nenhuma troca de modo por confirmar desde o último reinício.</translation>
+    </message>
 </context>
 </TS>

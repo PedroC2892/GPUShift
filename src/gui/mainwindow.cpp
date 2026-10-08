@@ -183,6 +183,11 @@ QGroupBox *MainWindow::buildModeBox()
 		layout->addWidget(notice(switchMessage(sw), sw == GS_SWITCH_CONFLICT));
 	if (current != GS_MODE_NONE)
 		layout->addWidget(valueLabel(tr("Current mode: <b>%1</b>").arg(modeTitle(current))));
+	if (gs_awaiting_confirmation(m_sys))
+		layout->addWidget(notice(tr("This mode change is not confirmed yet (%1 of %2 boots). It is "
+					    "reverted automatically unless confirmed: run 'gpushift confirm' "
+					    "if the display works.")
+					 .arg(gs_unconfirmed_boots(m_sys)).arg(GS_MAX_BOOT_ATTEMPTS), true));
 	if (pending == GS_MODE_DEFAULT)
 		layout->addWidget(notice(tr("Reboot pending: the GPUShift configuration was removed."), true));
 	else if (pending != GS_MODE_NONE)
@@ -237,6 +242,7 @@ void MainWindow::applySelected()
 	if (mode == GS_MODE_INTEGRATED)
 		text += QLatin1String("\n\n") + tr("The dedicated GPU will be powered off. Displays connected "
 						 "to its outputs will not work in this mode.");
+	text += QLatin1String("\n\n") + recoveryText();
 	if (QMessageBox::question(this, tr("Apply GPU mode"), text) != QMessageBox::Yes)
 		return;
 	runHelper(tr("Applying %1 mode…").arg(modeTitle(mode)),
@@ -271,6 +277,19 @@ void MainWindow::runHelper(const QString &busyText, gs_status (*task)(gs_mode), 
 		refresh();
 	});
 	thread->start();
+}
+
+// Translated version of gs_recovery_text().
+QString MainWindow::recoveryText()
+{
+	return tr("If the screen stays black after rebooting:\n"
+		  "1. Wait and reboot: after %1 boots without confirmation the previous mode is restored "
+		  "automatically.\n"
+		  "2. Press Ctrl+Alt+F3, log in and run: sudo gpushift reset && sudo reboot\n"
+		  "3. In the boot menu press 'e', add gpushift.reset=1 to the 'linux' line and boot "
+		  "with Ctrl+X or F10.\n"
+		  "Full guide: %2").arg(GS_MAX_BOOT_ATTEMPTS)
+		.arg(QStringLiteral(GPUSHIFT_DOC_DIR "/RECOVERY.md"));
 }
 
 QString MainWindow::modeTitle(gs_mode mode)
@@ -337,6 +356,7 @@ QString MainWindow::statusMessage(gs_status st)
 	case GS_ERR_MUX: return tr("Could not change the firmware GPU MUX.");
 	case GS_ERR_PERMISSION: return tr("Administrator privileges are required, but pkexec was not found.");
 	case GS_ERR_AUTH: return tr("Authentication was cancelled or denied.");
+	case GS_ERR_NOT_AWAITING: return tr("There is no unconfirmed mode change since the last reboot.");
 	default: return tr("Unexpected error (code %1).").arg(static_cast<int>(st));
 	}
 }

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "confirmdialog.h"
 #include "mainwindow.h"
 
 #include <QApplication>
@@ -21,6 +22,9 @@ int main(int argc, char *argv[])
 	if (appTranslator.load(QLocale(), QStringLiteral("gpushift"), QStringLiteral("_"),
 			       QStringLiteral(GPUSHIFT_TRANSLATIONS_DIR)))
 		QApplication::installTranslator(&appTranslator);
+
+	if (QCoreApplication::arguments().contains(QStringLiteral("--confirm")))
+		return runConfirmation();
 
 	MainWindow window;
 	window.show();

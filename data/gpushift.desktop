@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=GPUShift
+GenericName=GPU Mode Manager
+GenericName[pt_PT]=Gestor de modos de GPU
+Comment=Show GPU information and switch between the GPU modes your laptop supports
+Comment[pt_PT]=Mostrar informação das GPUs e alternar entre os modos de GPU suportados pelo portátil
+Exec=gpushift-gui
+Icon=gpushift
+Terminal=false
+Categories=Qt;System;Settings;HardwareSettings;
+Keywords=GPU;graphics;hybrid;PRIME;Optimus;NVIDIA;AMD;Intel;MUX;
+Keywords[pt_PT]=GPU;gráfica;híbrida;PRIME;Optimus;NVIDIA;AMD;Intel;MUX;

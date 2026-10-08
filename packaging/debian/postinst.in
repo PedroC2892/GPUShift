@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+# Enable the boot check (the Debian equivalent of 'systemctl enable', which
+# also works when systemd is not running, e.g. in a chroot).
+if [ "$1" = "configure" ] && command -v deb-systemd-helper >/dev/null 2>&1; then
+	deb-systemd-helper unmask gpushift-boot-check.service >/dev/null || true
+	deb-systemd-helper enable gpushift-boot-check.service >/dev/null || true
+fi
+if [ -d /run/systemd/system ]; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+
+exit 0

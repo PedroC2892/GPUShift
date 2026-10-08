@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+# Undo GPUShift's changes while the helper is still installed, so no
+# blacklist, udev rule or MUX change outlives the package. If the initramfs
+# cannot be rebuilt, an emergency reset still removes the files; if even
+# that fails, removal stops (set GPUSHIFT_FORCE_REMOVE=1 to remove anyway).
+undo_changes() {
+	@GPUSHIFT_HELPER_PATH@ reset && return 0
+	echo "gpushift: retrying without regenerating the initramfs" >&2
+	if @GPUSHIFT_HELPER_PATH@ reset --force; then
+		echo "gpushift: regenerate the initramfs with your distribution's tool (e.g. update-initramfs -u -k all)" >&2
+		return 0
+	fi
+	return 1
+}
+
+if [ "$1" = "remove" ]; then
+	if ! undo_changes; then
+		echo "gpushift: could not undo the GPU mode changes; the package was NOT removed." >&2
+		echo "gpushift: follow @CMAKE_INSTALL_FULL_DOCDIR@/RECOVERY.md (section 5, by hand), then retry," >&2
+		echo "gpushift: or run 'GPUSHIFT_FORCE_REMOVE=1 apt remove gpushift' to remove it anyway." >&2
+		[ "${GPUSHIFT_FORCE_REMOVE:-0}" = 1 ] || exit 1
+	fi
+	if command -v deb-systemd-helper >/dev/null 2>&1; then
+		deb-systemd-helper disable gpushift-boot-check.service >/dev/null || true
+	fi
+fi
+
+exit 0

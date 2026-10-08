@@ -1,0 +1,16 @@
+# $1 is 0 on removal, 1 on upgrade. A failing %preun stops the removal.
+if [ "$1" -eq 0 ]; then
+	if ! @GPUSHIFT_HELPER_PATH@ reset; then
+		echo "gpushift: retrying without regenerating the initramfs" >&2
+		if @GPUSHIFT_HELPER_PATH@ reset --force; then
+			echo "gpushift: regenerate the initramfs with: dracut --force --regenerate-all" >&2
+		else
+			echo "gpushift: could not undo the GPU mode changes; the package was NOT removed." >&2
+			echo "gpushift: follow @CMAKE_INSTALL_FULL_DOCDIR@/RECOVERY.md, or set GPUSHIFT_FORCE_REMOVE=1 to remove anyway." >&2
+			[ "${GPUSHIFT_FORCE_REMOVE:-0}" = 1 ] || exit 1
+		fi
+	fi
+	if [ -x /usr/bin/systemctl ]; then
+		systemctl disable gpushift-boot-check.service >/dev/null 2>&1 || :
+	fi
+fi

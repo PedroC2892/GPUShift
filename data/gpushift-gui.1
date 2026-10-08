@@ -1,0 +1,17 @@
+.TH GPUSHIFT\-GUI 1 "2026-10-08" "GPUShift 0.1.0" "User Commands"
+.SH NAME
+gpushift\-gui \- graphical GPU mode manager
+.SH SYNOPSIS
+.B gpushift\-gui
+.RB [ \-\-confirm ]
+.SH DESCRIPTION
+Shows GPU information and switches between the GPU modes the hardware
+supports.
+.TP
+.B \-\-confirm
+Ask whether the display works after a mode change, and revert it if
+nobody answers within 30 seconds. Started by
+.B gpushift confirm
+at login.
+.SH SEE ALSO
+.BR gpushift (1)

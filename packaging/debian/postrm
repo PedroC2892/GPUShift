@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "purge" ]; then
+	if command -v deb-systemd-helper >/dev/null 2>&1; then
+		deb-systemd-helper purge gpushift-boot-check.service >/dev/null || true
+	fi
+	# A state left behind means the changes were not undone: keep the backups.
+	if [ -e /var/lib/gpushift/state ]; then
+		echo "gpushift: keeping /var/lib/gpushift (GPU mode changes still applied, backups inside)" >&2
+	else
+		rm -rf /var/lib/gpushift
+	fi
+	rm -rf /run/gpushift
+fi
+if [ -d /run/systemd/system ]; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+
+exit 0

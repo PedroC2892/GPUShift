@@ -1,0 +1,24 @@
+post_install() {
+	systemctl enable gpushift-boot-check.service >/dev/null 2>&1 || :
+}
+
+# pacman cannot abort a removal from a scriptlet, so the emergency reset is
+# the fallback and a loud message the last resort.
+pre_remove() {
+	if ! /usr/lib/gpushift/gpushift-helper reset; then
+		echo "gpushift: retrying without regenerating the initramfs" >&2
+		if /usr/lib/gpushift/gpushift-helper reset --force; then
+			echo "gpushift: regenerate the initramfs with: mkinitcpio -P" >&2
+		else
+			echo "gpushift: COULD NOT UNDO THE GPU MODE CHANGES. Delete /etc/modprobe.d/gpushift.conf" >&2
+			echo "gpushift: and /etc/udev/rules.d/50-gpushift.rules, then run mkinitcpio -P." >&2
+		fi
+	fi
+	systemctl disable gpushift-boot-check.service >/dev/null 2>&1 || :
+}
+
+post_remove() {
+	# A state left behind means the changes were not undone: keep the backups.
+	[ -e /var/lib/gpushift/state ] || rm -rf /var/lib/gpushift
+	rm -rf /run/gpushift
+}

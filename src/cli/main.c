@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 /* gpushift: command line interface to libgpushift. */
 #include "gpushift/gpushift.h"
+#include "offline.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -17,6 +18,11 @@ static void usage(FILE *out)
 	      "  modes         Show the current, pending and available GPU modes\n"
 	      "  set <mode>    Switch to integrated, hybrid or dedicated (needs a reboot)\n"
 	      "  reset         Remove every change made by GPUShift (needs a reboot)\n"
+	      "  reset --root <dir>\n"
+	      "                Remove GPUShift's files from a system mounted at <dir>\n"
+	      "                (recovery from a live USB)\n"
+	      "  confirm       Confirm that the display works after a mode change\n"
+	      "                (run automatically when the graphical session starts)\n"
 	      "\n"
 	      "Options:\n"
 	      "  --json        Machine-readable output (status, modes)\n"
@@ -82,6 +88,9 @@ static void modes_text(const gs_system *sys)
 		printf("Current mode:   %s\n", gs_mode_name(cur));
 	if (pending != GS_MODE_NONE)
 		printf("Pending mode:   %s (reboot required)\n", gs_mode_name(pending));
+	if (gs_awaiting_confirmation(sys))
+		printf("Unconfirmed:    %d of %d boots; run 'gpushift confirm' if the display works\n",
+		       gs_unconfirmed_boots(sys), GS_MAX_BOOT_ATTEMPTS);
 	if (gs_sys_mux_backend(sys))
 		printf("Firmware MUX:   %s\n", gs_sys_mux_backend(sys));
 	if (gs_sys_switcheroo(sys))
@@ -124,7 +133,9 @@ static void modes_json_fields(const gs_system *sys)
 		printf("%s", i ? "," : "");
 		json_str(gs_conflict_name(sys, i));
 	}
-	printf("],\"switcheroo_control\":%s", gs_sys_switcheroo(sys) ? "true" : "false");
+	printf("],\"switcheroo_control\":%s,\"awaiting_confirmation\":%s,\"unconfirmed_boots\":%d",
+	       gs_sys_switcheroo(sys) ? "true" : "false",
+	       gs_awaiting_confirmation(sys) ? "true" : "false", gs_unconfirmed_boots(sys));
 }
 
 static void status_text(const gs_system *sys)
@@ -264,12 +275,30 @@ static int cmd_set(const gs_system *sys, const char *name, bool yes)
 	printf("Switching to %s mode. The change takes effect after a reboot.\n", name);
 	if (mode == GS_MODE_INTEGRATED)
 		printf("The dedicated GPU will be powered off; displays wired to it will not work.\n");
+	printf("\n%s\n", gs_recovery_text());
 	if (!confirm("Continue?", yes))
 		return GS_ERR_GENERIC;
 	gs_status st = gs_apply_mode(mode);
 	if (st != GS_OK)
 		return fail(st);
 	printf("Done. Reboot to switch to %s mode.\n", name);
+	return GS_OK;
+}
+
+/* Started by the XDG autostart entry: reaching a session means the display works. */
+static int cmd_confirm(const gs_system *sys)
+{
+	if (!gs_awaiting_confirmation(sys))
+		return GS_OK;
+	/* With the GUI installed, ask the user with a countdown instead. */
+	if ((getenv("WAYLAND_DISPLAY") || getenv("DISPLAY")) && access(GPUSHIFT_GUI_PATH, X_OK) == 0) {
+		execl(GPUSHIFT_GUI_PATH, GPUSHIFT_GUI_PATH, "--confirm", (char *)NULL);
+		perror("gpushift: could not start the GUI");
+	}
+	gs_status st = gs_confirm();
+	if (st != GS_OK)
+		return fail(st);
+	printf("Mode change confirmed.\n");
 	return GS_OK;
 }
 
@@ -305,15 +334,18 @@ int main(int argc, char **argv)
 			cmd = argv[i];
 		} else if (cmd && !arg && strcmp(cmd, "set") == 0 && argv[i][0] != '-') {
 			arg = argv[i];
+		} else if (cmd && !arg && strcmp(cmd, "reset") == 0 && strcmp(argv[i], "--root") == 0 &&
+			   i + 1 < argc) {
+			arg = argv[++i];
 		} else {
 			fprintf(stderr, "gpushift: unexpected argument '%s'\n", argv[i]);
 			usage(stderr);
 			return GS_ERR_USAGE;
 		}
 	}
-	static const char *const commands[] = { "status", "modes", "set", "reset" };
+	static const char *const commands[] = { "status", "modes", "set", "reset", "confirm" };
 	bool known = false;
-	for (size_t i = 0; cmd && i < 4; i++)
+	for (size_t i = 0; cmd && i < 5; i++)
 		known |= strcmp(cmd, commands[i]) == 0;
 	if (!known) {
 		if (cmd)
@@ -321,6 +353,9 @@ int main(int argc, char **argv)
 		usage(stderr);
 		return GS_ERR_USAGE;
 	}
+
+	if (strcmp(cmd, "reset") == 0 && arg)
+		return gs_reset_offline(arg);
 
 	gs_system *sys = gs_detect();
 	if (!sys) {
@@ -332,6 +367,8 @@ int main(int argc, char **argv)
 		rc = cmd_set(sys, arg, yes);
 	} else if (strcmp(cmd, "reset") == 0) {
 		rc = cmd_reset(yes);
+	} else if (strcmp(cmd, "confirm") == 0) {
+		rc = cmd_confirm(sys);
 	} else if (strcmp(cmd, "modes") == 0 && json) {
 		putchar('{');
 		modes_json_fields(sys);

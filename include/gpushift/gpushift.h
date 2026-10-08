@@ -140,6 +140,7 @@ gs_status gs_reset(void);
  * a working graphical session. gpushift-boot-check reverts it automatically
  * after GS_MAX_BOOT_ATTEMPTS unconfirmed boots.
  */
+#define GS_MAX_BOOT_ATTEMPTS 3
 bool gs_awaiting_confirmation(const gs_system *sys);
 int gs_unconfirmed_boots(const gs_system *sys);
 /* Neither needs a password: both only act on an unconfirmed change. */

@@ -24,7 +24,9 @@ target_compile_definitions(gpushift
          GPUSHIFT_UDEV_RULES_DIR="${GPUSHIFT_UDEV_RULES_DIR}")
 target_link_libraries(gpushift PUBLIC PkgConfig::LIBPCI ${CMAKE_DL_LIBS})
 
-add_executable(gpushift-cli cli/main.c)
+add_executable(gpushift-cli cli/main.c cli/offline.c)
+target_compile_definitions(gpushift-cli PRIVATE
+  GPUSHIFT_GUI_PATH="${CMAKE_INSTALL_FULL_BINDIR}/gpushift-gui")
 set_target_properties(gpushift-cli PROPERTIES OUTPUT_NAME gpushift)
 target_link_libraries(gpushift-cli PRIVATE gpushift)
 install(TARGETS gpushift-cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

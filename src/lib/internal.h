@@ -102,7 +102,6 @@ int gs_sysfs_write(const char *path, const char *value);
 #define GS_PENDING_FILE "/run/gpushift/pending"
 #define GS_LOG_FILE "/var/lib/gpushift/log"
 #define GS_RECOVERY_FILE "/var/lib/gpushift/RECOVERY.txt"
-#define GS_MAX_BOOT_ATTEMPTS 3
 int gs_state_load(struct gs_state *st);  /* 0: loaded, -1: absent/invalid */
 int gs_state_format(const struct gs_state *st, char *buf, size_t n);
 void gs_load_state(struct gs_system *sys);

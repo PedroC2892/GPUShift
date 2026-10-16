@@ -61,6 +61,21 @@ static void test_asus_mux(void)
 	gs_system_free(sys);
 }
 
+/* An Xorg Device section bound to the dGPU would leave the iGPU's panel black. */
+static void test_xorg_pin(void)
+{
+	gs_system *sys = load_fixture("xorg-pin");
+	gs_mode m[GS_MODE_COUNT];
+	CHECK_STR(gs_sys_xorg_pin(sys), "/etc/X11/xorg.conf.d/20-nvidia-hdmi.conf");
+	CHECK(gs_switchability(sys) == GS_SWITCH_OK);
+	CHECK(gs_list_modes(sys, m) == 1 && m[0] == GS_MODE_DEDICATED);
+	gs_system_free(sys);
+
+	sys = load_fixture("asus-mux");
+	CHECK(gs_sys_xorg_pin(sys) == NULL);
+	gs_system_free(sys);
+}
+
 static void test_conflict(void)
 {
 	gs_system *sys = load_fixture("conflict");
@@ -172,6 +187,7 @@ int main(void)
 	test_not_switchable();
 	test_hybrid_laptops();
 	test_asus_mux();
+	test_xorg_pin();
 	test_conflict();
 	test_state_and_pending();
 	test_names();

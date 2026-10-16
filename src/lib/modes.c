@@ -38,7 +38,8 @@ static bool mode_supported(const gs_system *sys, gs_mode mode)
 	switch (mode) {
 	case GS_MODE_INTEGRATED:
 	case GS_MODE_HYBRID:
-		return igpu_panel;
+		/* An Xorg Device section bound to the dGPU keeps X off the iGPU's panel. */
+		return igpu_panel && !sys->xorg_pin[0];
 	case GS_MODE_DEDICATED:
 		/* Routing the panel to a dGPU without a working driver means a black screen. */
 		return sys->mux && !dgpu->removed && dgpu->driver[0];

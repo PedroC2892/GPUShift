@@ -71,6 +71,7 @@ struct gs_system {
 	const char *conflicts[8];
 	size_t conflict_count;
 	bool switcheroo;
+	char xorg_pin[288];  /* Xorg file whose Device section needs the dGPU, if any */
 	char initramfs[24];  /* name of the initramfs generator found, if any */
 };
 

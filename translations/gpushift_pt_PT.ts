@@ -51,6 +51,10 @@
         <translation>Ferramenta em conflito ativa: %1. Remova-a ou desative-a antes de usar o GPUShift; as alterações estão bloqueadas.</translation>
     </message>
     <message>
+        <source>%1 binds the X server to the dedicated GPU, so the Integrated and Hybrid modes would boot to a black screen and are not offered. Remove its Device section to enable them.</source>
+        <translation>%1 associa o servidor X à GPU dedicada, por isso os modos Integrado e Híbrido arrancariam com o ecrã preto e não são oferecidos. Remova a secção Device desse ficheiro para os ativar.</translation>
+    </message>
+    <message>
         <source>System</source>
         <translation>Sistema</translation>
     </message>

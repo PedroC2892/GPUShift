@@ -75,6 +75,14 @@ static const char *mode_description(gs_mode mode)
 	}
 }
 
+static void xorg_pin_warning(FILE *out, const gs_system *sys)
+{
+	fprintf(out, "Warning: %s binds the X server to the dedicated GPU.\n"
+		"Integrated and hybrid modes would boot to a black screen, so they are not offered.\n"
+		"Remove its Device section (an OutputClass section with MatchDriver can keep its options).\n",
+		gs_sys_xorg_pin(sys));
+}
+
 static void modes_text(const gs_system *sys)
 {
 	gs_mode modes[GS_MODE_COUNT], cur = gs_current_mode(sys), pending = gs_pending_mode(sys);
@@ -85,6 +93,8 @@ static void modes_text(const gs_system *sys)
 		printf("%s\n", gs_switch_message(sw));
 	for (size_t i = 0; i < gs_conflict_count(sys); i++)
 		printf("Warning: conflicting tool active: %s\n", gs_conflict_name(sys, i));
+	if (gs_sys_xorg_pin(sys))
+		xorg_pin_warning(stdout, sys);
 	if (cur != GS_MODE_NONE)
 		printf("Current mode:   %s\n", gs_mode_name(cur));
 	if (pending != GS_MODE_NONE)
@@ -134,7 +144,9 @@ static void modes_json_fields(const gs_system *sys)
 		printf("%s", i ? "," : "");
 		json_str(gs_conflict_name(sys, i));
 	}
-	printf("],\"switcheroo_control\":%s,\"awaiting_confirmation\":%s,\"unconfirmed_boots\":%d",
+	printf("],\"xorg_pin\":");
+	json_str(gs_sys_xorg_pin(sys));
+	printf(",\"switcheroo_control\":%s,\"awaiting_confirmation\":%s,\"unconfirmed_boots\":%d",
 	       gs_sys_switcheroo(sys) ? "true" : "false",
 	       gs_awaiting_confirmation(sys) ? "true" : "false", gs_unconfirmed_boots(sys));
 }
@@ -264,8 +276,11 @@ static int cmd_set(const gs_system *sys, const char *name, bool yes)
 		fprintf(stderr, "gpushift: %s\n", gs_switch_message(gs_switchability(sys)));
 		return GS_ERR_NOT_SWITCHABLE;
 	}
-	if (!gs_mode_available(sys, mode))
+	if (!gs_mode_available(sys, mode)) {
+		if (mode != GS_MODE_DEDICATED && gs_sys_xorg_pin(sys))
+			xorg_pin_warning(stderr, sys);
 		return fail(GS_ERR_MODE_UNAVAILABLE);
+	}
 	if (mode == gs_current_mode(sys) && gs_pending_mode(sys) == GS_MODE_NONE) {
 		printf("Already in %s mode; nothing to do.\n", name);
 		return GS_OK;

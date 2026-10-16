@@ -112,6 +112,11 @@ size_t gs_conflict_count(const gs_system *sys);
 const char *gs_conflict_name(const gs_system *sys, size_t index);
 /* switcheroo-control is compatible; reported for information only. */
 bool gs_sys_switcheroo(const gs_system *sys);
+/*
+ * Xorg configuration file with a Device section bound to the dGPU, or NULL.
+ * X then ignores the iGPU, so Integrated and Hybrid would boot to a black screen.
+ */
+const char *gs_sys_xorg_pin(const gs_system *sys);
 
 /* Name of the initramfs generator that will be used, or NULL if none was found. */
 const char *gs_sys_initramfs_tool(const gs_system *sys);

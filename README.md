@@ -57,6 +57,10 @@ Hardware:
   without XDG autostart (i3, sway and other bare window managers, or text-only
   use) run `gpushift confirm` after a change, or a working mode is reverted on
   the third boot (with one automatic reboot).
+- Integrated and Hybrid are not offered while `/etc/X11/xorg.conf` or a file
+  in `/etc/X11/xorg.conf.d/` has a `Device` section bound to the dGPU (its
+  driver or `BusID`): X would only use the dGPU and the panel would stay
+  black. Move such options to an `OutputClass` section with `MatchDriver`.
 - Integrated mode blacklists the dGPU vendor's driver, so an
   external GPU (eGPU) of the same vendor does not work while it is active.
 

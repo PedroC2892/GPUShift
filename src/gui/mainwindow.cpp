@@ -75,6 +75,11 @@ QWidget *MainWindow::buildContent()
 		layout->addWidget(notice(tr("Conflicting tool active: %1. Remove or disable it before "
 					    "using GPUShift; changes are blocked.")
 					 .arg(QString::fromUtf8(gs_conflict_name(m_sys, i))), true));
+	if (const char *pin = gs_sys_xorg_pin(m_sys))
+		layout->addWidget(notice(tr("%1 binds the X server to the dedicated GPU, so the Integrated "
+					    "and Hybrid modes would boot to a black screen and are not offered. "
+					    "Remove its Device section to enable them.")
+					 .arg(QString::fromUtf8(pin)), true));
 	layout->addWidget(buildModeBox());
 	layout->addWidget(buildSystemBox());
 	for (size_t i = 0; i < gs_gpu_count(m_sys); i++)

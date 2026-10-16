@@ -28,6 +28,7 @@ expect intel-nvidia 0 '"modes":\["integrated","hybrid"\]' modes --json
 expect intel-nvidia 0 '\* hybrid' modes
 expect asus-mux 0 '"mux":"asus-wmi"' modes --json
 expect asus-mux 0 'dedicated' modes
+expect xorg-pin 0 '"xorg_pin":"/etc/X11/xorg.conf.d/20-nvidia-hdmi.conf"' modes --json
 expect conflict 0 '"switchable":"conflict"' --json modes
 expect single-intel 0 'only one GPU' modes
 expect single-intel 0 '"modes":\[\]' status --json
@@ -49,6 +50,7 @@ expect single-amd 3 'only one GPU' set integrated --yes
 expect desktop-2gpu 4 'not a laptop' set integrated --yes
 expect conflict 6 'conflicting tool active: supergfxctl' set integrated --yes
 expect intel-nvidia 5 'not available' set dedicated --yes
+expect xorg-pin 5 "binds the X server to the dedicated GPU" set hybrid --yes
 expect intel-nvidia 2 'expected a mode' set turbo
 expect intel-nvidia 2 'expected a mode' set
 expect intel-nvidia 2 'unexpected argument' set hybrid integrated
